@@ -1,78 +1,77 @@
-# Project Tracking Checklist (TODO)
+# Project Task Tracking (TODO.md)
 
-## Phase 1: Foundation & Environment
-- [ ] Initialize Git repository.
-- [ ] Initialize project structure using `uv init` and ensure `pyproject.toml` and `uv.lock` are created.
-- [ ] Create a `docs/prompt_book.md` to log all AI prompts used during development.
-- [x] Implement `config.py` with all centralized constants:
-    - [x] Frequencies (5, 10, 15, 20 Hz).
-    - [x] Sampling rate (1000 Hz) and Duration (10s).
-    - [x] Window size (10).
-    - [x] Base Amplitude (A) e.g., 1.0.
-    - [x] Base Phase (theta) e.g., 0.0.
-    - [x] Noise parameters (alpha, beta, using Gaussian distribution).
-    - [x] Model hyperparameters (hidden units, layers, LR, etc.).
-- [ ] Verify environment setup by importing libraries.
+## Phase 1: Environment & Tooling Setup
+- [ ] **Initialize Project with `uv`**
+    - **DoD:** `pyproject.toml` and `uv.lock` generated; `uv sync` completes successfully.
+- [ ] **Configure Quality Enforcement (`Ruff`)**
+    - **DoD:** `ruff` configuration file created; `ruff check .` returns 0 violations.
+- [ ] **Set up Testing Suite (`pytest` & `pytest-cov`)**
+    - **DoD:** Testing infrastructure initialized; coverage reports verify a minimum of 85%.
+- [ ] **Establish Mandatory Directory Structure**
+    - **DoD:** All directories (`src/sdk/`, `src/models/`, `src/data/`, `src/training/`, `src/utils/`, `docs/`, `notebooks/`, `tests/unit/`, `tests/integration/`, `assets/`) created.
 
-## Phase 2: Data & Utilities
-- [x] Implement `src/utils.py`:
-    - [x] `to_one_hot(index, total_classes)` function.
-    - [x] `sliding_window_split(data, window_size)` function.
-- [ ] Implement `src/data_gen.py`:
-    - [ ] `generate_pure_sine(freq, duration, sampling_rate, amplitude, phase)`
-    - [ ] `apply_noise(signal, alpha, beta, distribution)`
-    - [ ] `create_combined_signal(noisy_signals)`
-    - [ ] `prepare_dataset(config)` - function to orchestrate the creation of X and Y, **and split them into Train, Validation, and Test sets**.
-- [x] Implement `tests/test_utils.py`:
-    - [x] Test One-Hot vector dimensions.
-    - [x] Test windowing output shapes and values.
-- [ ] Implement `tests/test_data.py`:
-    - [ ] Test signal duration and sample count.
-    - [ ] Test noise bounds (amplitude and phase).
-    - [ ] Test combined signal summation.
-    - [ ] Test final X_input shape equals 14 (4 OHE + 10 Signal).
-    - [ ] Test final Y_true shape equals 10.
-    - [ ] **Test Time-Alignment:** Verify that X_input windows and Y_true windows correspond to the exact same time indices.
-- [ ] **Milestone:** All tests in `tests/` pass with `pytest`.
-- [ ] **Milestone:** Ensure minimum 85% test coverage using `pytest-cov`.
-- [ ] **Milestone:** Run `ruff check` and ensure exactly 0 violations.
+## Phase 2: Configuration & SDK Foundation
+- [ ] **Implement Dynamic `config.py`**
+    - **DoD:** All parameters (frequencies, noise coefficients α/β, hyperparameters) reside in `config.py`; zero hardcoded values in `src/`.
+- [ ] **Implement `SignalDenoiserSDK` Entry Point**
+    - **DoD:** Public interface defined in `src/sdk/interface.py`; all external calls must go through this class.
+- [ ] **Implement `Gatekeeper` Input Validation**
+    - **DoD:** `src/sdk/gatekeeper.py` validates One-Hot vector structure and window dimensions (10 samples) before model execution.
 
-## Phase 3: Modeling
-- [ ] Implement `src/models.py`:
-    - [ ] `FCNet` class definition (dynamically built using `config.py` parameters).
-    - [ ] `RNNNet` class definition (dynamically built using `config.py` parameters).
-    - [ ] `LSTMNet` class definition (dynamically built using `config.py` parameters).
-- [ ] Implement `tests/test_models.py`:
-    - [ ] Verify `FCNet` forward pass (Input shape: Batchx14, Output shape: Batchx10).
-    - [ ] Verify `RNNNet` forward pass (Input shape: Batchx14, Output shape: Batchx10).
-    - [ ] Verify `LSTMNet` forward pass (Input shape: Batchx14, Output shape: Batchx10).
-- [ ] **Milestone:** Ensure minimum 85% test coverage using `pytest-cov`.
-- [ ] **Milestone:** Run `ruff check` and ensure exactly 0 violations.
+## Phase 3: Dataset Generation Engine
+- [ ] **Implement `SineWaveDatasetGenerator`**
+    - **DoD:** Mathematical synthesis using $S_i(t) = A_i \cdot \sin(2\pi f_i t + \theta_i)$.
+    - **DoD:** Explicit generation of **Gaussian noise** relative to signal intensity (α, β).
+    - **DoD:** Export exactly 10 vectors: $\Sigma_{\text{noise}}$, $\Sigma_{\text{pure}}$, 4 pure waves $S_i$, and 4 noisy waves $S'_i$.
+    - **DoD:** Output exactly 10,000 samples per wave (10s @ 1000Hz).
+    - **DoD:** TDD applied; `src/data/generator.py` < 150 lines; >85% unit test coverage.
 
-## Phase 4: Training Pipeline
-- [ ] Implement `src/train.py`:
-    - [ ] Dataset and DataLoader setup (using Batch Size from `config.py`).
-    - [ ] Training loop with MSE loss and Adam Optimizer (using LR from `config.py`).
-    - [ ] **Mandatory** Validation step to track generalization.
-    - [ ] Model saving logic (`.pth` or `.h5`).
-    - [ ] Save loss history (Train Loss & Validation Loss per Epoch) for later plotting.
-- [ ] Train the FC model and save weights + loss history.
-- [ ] Train the RNN model and save weights + loss history.
-- [ ] Train the LSTM model and save weights + loss history.
-- [ ] **Milestone:** Ensure minimum 85% test coverage using `pytest-cov`.
-- [ ] **Milestone:** Run `ruff check` and ensure exactly 0 violations.
+## Phase 4: Model Architectures (OOP & DRY)
+- [ ] **Implement `BaseModel` Abstract Class**
+    - **DoD:** Shared logic for weight initialization and input/output validation centralized in `src/models/base.py`.
+- [ ] **Implement `RNNModel`, `LSTMModel`, and `FCModel`**
+    - **DoD:** All models inherit from `BaseModel`; zero code duplication (DRY).
+    - **DoD:** Each model file (`fc.py`, `rnn.py`, `lstm.py`) is strictly under 150 lines.
+    - **DoD:** `tests/unit/test_models.py` verifies forward pass shapes (14-in, 10-out).
 
-## Phase 5: Evaluation & Reporting
-- [ ] Implement `src/eval.py`:
-    - [ ] Function to load models and run inference.
-    - [ ] Plotting logic for waveforms: "Pure vs. Noisy vs. Reconstructed".
-    - [ ] Plotting logic for training errors (Loss curves over epochs).
-    - [ ] "Extreme Noise" test script to evaluate performance degradation.
-- [ ] Finalize `README.md`:
-    - [ ] **Parameter Documentation & Justification:** Explain choices for frequencies (vs. 10ms window), base amplitude, phase, network structures (layers/neurons), and why Gaussian noise distribution was chosen.
-    - [ ] **Visualizations:** Embed screenshots of graphs (pure sine waves, combined noisy signals, training error curves, and reconstructed waves).
-    - [ ] **Performance Comparison:** Tabulate and compare the results of Fully Connected, RNN, and LSTM.
-    - [ ] **Noise vs. Error Analysis:** Demonstrate and explain the relationship between noise intensity and reconstruction error quality using graphs and data.
-    - [ ] **Architecture Insights & Failure Analysis:** - Explain when RNN is better, when LSTM is preferred, and when FC is appropriate.
-        - Show specifically when and why each network fails (e.g., FC failing due to lack of time context, RNN/LSTM failing at extreme noise).
-- [ ] Final code review to ensure all Python/Test files strictly respect the < 150 lines limit.
+## Phase 5: Training Pipeline & Dynamic Sampling
+- [ ] **Implement Dataset Partitioning Logic**
+    - **DoD:** Implementation of a strict 70/15/15 split (Training, Validation, and Test sets) to evaluate model generalization.
+- [ ] **Implement Data Integrity & Validation Checks**
+    - **DoD:** Integration of `Gatekeeper` logic to verify that generated vectors (Sine waves and combined signals) match the required shapes (e.g., 10,000 samples) and types before training.
+- [ ] **Apply TDD to the Training Orchestrator**
+    - **DoD:** Unit tests in `tests/unit/` verify the generic training loop, MSE calculation logic, and backpropagation flow using mock data.
+- [ ] **Implement Dynamic Sampling Logic**
+    - **DoD:** Verified correct concatenation of the One-Hot vector $C$ (left) and the 10-sample window (right).
+- [ ] **Implement Performance & Resource Tracking**
+    - **DoD:** SDK logs training duration (via `time`) and peak memory usage (via `psutil`) for the performance report.
+
+## Phase 6: Research, Visualization & Notebooks
+- [ ] **Initialize and Integrate Research Notebook**
+    - **DoD:** `notebooks/analysis.ipynb` created, importing logic exclusively via the SDK layer.
+- [ ] **Perform Model Evaluation on Test Set**
+    - **DoD:** Comparative metrics (MSE) reported specifically for the unseen Test Set to demonstrate true performance.
+- [ ] **Sensitivity Analysis & Automated Visualizations**
+    - **DoD:** Graphs showing reconstruction quality vs. noise intensity (α, β) and training loss curves exported to the `assets/` directory.
+
+## Phase 7: Final Documentation & Quality Polish
+- [ ] **Assemble Technical README.md**
+    - **DoD:** Comprehensive User Manual included (System requirements, Installation via `uv sync`, Usage instructions, and Configuration guide for `config.py`).
+    - **DoD:** Performance Comparison Table included (MSE/MAE metrics across FC, RNN, and LSTM architectures).
+    - **DoD:** Parameter Justification provided (Detailed explanation of chosen frequencies vs. sampling rate and period/window ratio).
+    - **DoD:** License, Credits for third-party libraries, and Repository link included.
+- [ ] **Integrate Research Visualizations**
+    - **DoD:** README contains exported high-resolution plots of Pure vs. Noisy vs. Reconstructed signals for various frequencies.
+    - **DoD:** Training Loss curves and Sensitivity Analysis graphs (performance degradation in >80% noise cases) embedded.
+- [ ] **Finalize Professional Documentation Suite**
+    - **DoD:** Dedicated architecture PRDs (`PRD_RNN.md`, `PRD_LSTM.md`, `PRD_FC.md`) finalized in the `docs/` directory.
+    - **DoD:** Prompt Engineering Log documented (All major AI prompts used for architecture, logic, and debugging included).
+- [ ] **Global Versioning & Package Integrity**
+    - **DoD:** `src/shared/version.py` established at version 1.00 and correctly synced with `pyproject.toml`.
+    - **DoD:** Verification that every package directory contains a valid `__init__.py` file for Python package standard compliance.
+- [ ] **Draft Cost & Resource Report**
+    - **DoD:** A table summarizing total training time per model and peak memory (RAM) usage documented in the README.
+- [ ] **Final Compliance Audit (Zero-Failure Gate)**
+    - **DoD:** `ruff check .` returns exactly 0 violations.
+    - **DoD:** `pytest --cov` confirms a minimum of 85% code coverage for all business logic.
+    - **DoD:** Manual/Automated verification that no single file in the project exceeds the 150-line limit.

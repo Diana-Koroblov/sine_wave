@@ -1,92 +1,135 @@
-# Technical Design & Implementation Plan: Sine Wave Extraction
+# Architecture & Design Document (PLAN.md)
 
-## 1. Architecture Overview
-The system is designed as a modular pipeline where data generation, model definition, training, and evaluation are decoupled. This modularity ensures that each component can be tested independently and kept under the 150-line limit.
+## 1. High-Level Architecture (C4 Model Approach)
 
-### 1.1 Directory Structure
-```text
-project_root/
-│
-├── config.py           # Centralized constants & hyperparameters
-├── src/
-│   ├── data_gen.py     # Signal synthesis and dataset preparation
-│   ├── models.py       # Neural network architectures (FC, RNN, LSTM)
-│   ├── train.py        # Training loops and model persistence
-│   ├── eval.py         # Metrics, plotting, and comparison logic
-│   └── utils.py        # Shared helpers (OHE, windowing)
-├── tests/              # Pytest suite
-│   ├── test_data.py
-│   ├── test_models.py
-│   └── test_utils.py
-├── docs/
-│   ├── PRD.md
-│   ├── PLAN.md
-│   └── TODO.md
-└── README.md           # Final report and analysis
+### 1.1 System Context
+The **Signal De-noising System** is a standalone Python library (SDK).
+*   **External Consumer:** Researchers, CLI tools, or Jupyter Notebooks.
+*   **Interaction:** Consumers interact **EXCLUSIVELY** with the `SignalDenoiserSDK` class. No direct access to internal signal generation or model weight manipulation is permitted.
+
+### 1.2 Containers
+*   **SDK Entry Point:** Orchestrates data generation, training, and evaluation.
+*   **Data Generation Engine:** Handles mathematical synthesis of sine waves and Gaussian noise injection.
+*   **Model Training Pipeline:** Manages the lifecycle of RNN, LSTM, and FC models.
+*   **Evaluation & Visualization Engine:** Generates metrics (MSE) and automated plots.
+
+### 1.3 Components (Module Breakdown)
+To respect the **150-line file limit**, the logic is decomposed as follows:
+*   `src/sdk/interface.py`: Public entry point (`SignalDenoiserSDK`).
+*   `src/sdk/gatekeeper.py`: Validates input data (One-Hot vector structure and window dimensions) before model processing.
+*   `src/data/generator.py`: Mathematical synthesis of $S_i(t)$ and $S'_i(t)$.
+*   `src/data/processor.py`: Sliding window extraction and One-Hot encoding.
+*   `src/models/base.py`: Abstract Base Class (`BaseModel`) for shared OOP logic.
+*   `src/models/fc.py`, `src/models/rnn.py`, `src/models/lstm.py`: Specific model implementations.
+*   `src/training/trainer.py`: Generic training loop and loss computation.
+*   `src/utils/config.py`: Dynamic configuration loader (zero hardcoding).
+*   `src/utils/visuals.py`: Automated graph exports and plotting.
+
+---
+
+## 2. Architecture Decision Records (ADRs)
+
+### ADR 1: SDK Abstraction
+*   **Decision:** All business logic is hidden behind a single SDK class.
+*   **Rationale:** This ensures that experimental code in Notebooks does not bypass validation or configuration checks. It provides a stable API for future GUI or web integrations.
+
+### ADR 2: OOP & Module Decoupling (DRY)
+*   **Decision:** Use an abstract `BaseModel` class inheriting from `torch.nn.Module`.
+*   **Rationale:** RNN, LSTM, and FC architectures share identical input/output requirements (14-in, 10-out). A base class centralizes weight initialization and common forward-pass validation, preventing code duplication across the three model files.
+
+### ADR 3: Configuration Management
+*   **Decision:** Use a centralized `Config` object initialized from a Python-based configuration file.
+*   **Rationale:** This eliminates hardcoded values. Changes to frequencies, noise levels ($\alpha, \beta$), or hidden layer sizes are applied globally by modifying one file, ensuring experiments are reproducible.
+
+### ADR 4: Quality & TDD
+*   **Decision:** Strict commitment to a Test-Driven Development (TDD) workflow.
+*   **Rationale:** To ensure high reliability and maintainability, tests must be written before implementation. We maintain a minimum of 85% coverage via `pytest-cov`, with tests separated into `tests/unit` (component isolation) and `tests/integration` (end-to-end SDK flows).
+
+---
+
+## 3. API Contracts & Interfaces
+
+### 3.1 `SineWaveDatasetGenerator` (src/data/generator.py)
+```python
+class SineWaveDatasetGenerator:
+    def generate_all_vectors(self) -> Dict[str, np.ndarray]:
+        """
+        Returns a dictionary containing 10 vectors:
+        - 'sum_noise': Σ_noise
+        - 'pure_1'...'pure_4': Individual S_i
+        - 'noisy_1'...'noisy_4': Individual S'_i
+        - 'sum_pure': Optional Σ_pure for visualization
+        """
+        pass
 ```
 
-## 2. Component Breakdown
+### 3.2 `SignalDenoiserSDK` (src/sdk/interface.py)
+```python
+class SignalDenoiserSDK:
+    def __init__(self, config_path: str): ...
+    def prepare_data(self) -> None: ...
+    def run_training(self, model_type: str) -> Dict[str, Any]: ...
+    def generate_report(self) -> str: ...
+```
 
-### 2.1 `config.py`
-*   **Purpose:** The single source of truth for all constants.
-*   **Contents:** Frequency list, amplitude, noise intensity ($\alpha, \beta$), noise distribution, sampling rate (1000Hz), duration (10s), window size (10), hidden layers, neurons, learning rate, and batch size.
+### 3.3 `BaseModel` (src/models/base.py)
+```python
+class BaseModel(ABC, torch.nn.Module):
+    @abstractmethod
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Input: (Batch, 14), Output: (Batch, 10)"""
+        pass
+```
 
-### 2.2 `src/data_gen.py`
-*   **Purpose:** Pure functional approach to signal generation.
-*   **Key Functions:** `generate_pure_sine()`, `apply_noise()`, `create_combined_signal()`.
-*   **Constraint:** No training logic allowed here.
+---
 
-### 2.3 `src/models.py`
-*   **Purpose:** Definition of PyTorch/TensorFlow models.
-*   **Classes:** `FCNET`, `RNNNet`, `LSTMNet`.
-*   **Constraint:** Models must accept the combined input shape (One-Hot vector + 10-sample window).
+## 4. Data Flow & Sequence
 
-### 2.4 `src/utils.py`
-*   **Purpose:** Data transformations.
-*   **Key Functions:** `to_one_hot()`, `sliding_window_split()`.
-*   **Constraint:** Must be stateless and purely mathematical.
+1.  **Initialization:** `SignalDenoiserSDK` loads `config.py`.
+2.  **Synthesis:** `SineWaveDatasetGenerator` produces 10,000 samples for 4 waves using $S_i(t) = A_i \cdot \sin(2\pi f_i t + \theta_i)$.
+3.  **Noise Injection:** Apply Gaussian noise to generate $S'_i(t)$ and sum them to form $\Sigma_{\text{noise}}$.
+4.  **Sampling Loop (Training Step):**
+    *   Select random index $t$ and target $i \in \{1,2,3,4\}$.
+    *   Generate One-Hot vector $C$ for target $i$.
+    *   Extract 10-sample window from $\Sigma_{\text{noise}}$ at index $t$.
+    *   Concatenate $C$ (left) + Window (right) to form $X_{\text{input}}$.
+    *   **Gatekeeping:** `Gatekeeper` validates $X_{\text{input}}$ dimensions and values.
+    *   Extract 10-sample ground truth window from $S_i$ at index $t$ ($Y_{\text{true}}$).
+5.  **Execution:** $X_{\text{input}}$ passes through the selected model (FC/RNN/LSTM).
+6.  **Optimization:** Compute **MSE Loss** between prediction and $Y_{\text{true}}$; perform backpropagation.
 
-### 2.5 `src/train.py`
-*   **Purpose:** Orchestrate the training process.
-*   **Logic:** Dataset loading, backpropagation, checkpoint saving, and loss history logging.
+---
 
-### 2.6 `src/eval.py`
-*   **Purpose:** Post-training analysis.
-*   **Logic:** Signal reconstruction visualization (Pure vs. Noisy vs. Pred), MSE calculation across architectures, and noise impact plotting.
+## 5. Deployment & Environment
 
-## 3. Implementation Phases
+### 5.1 Dependency Management
+*   **Tool:** `uv`
+*   **Lockfiles:** `pyproject.toml` and `uv.lock` are the source of truth for the environment.
 
-### Phase 1: Foundation (Environment & Config)
-*   Initialize Git repository.
-*   Define all constants in `config.py`.
-*   Setup requirements (NumPy, PyTorch/TensorFlow, Matplotlib, Pytest).
+### 5.2 Directory Structure
+```text
+sine_waves_project/
+├── pyproject.toml
+├── uv.lock
+├── config.py           # Global Parameters
+├── src/
+│   ├── sdk/            # Public Interface & Gatekeeper
+│   ├── data/           # Synthesis & Windowing logic
+│   ├── models/         # RNN, LSTM, FC (OOP implementation)
+│   ├── training/       # Training loops (MSE logic)
+│   └── utils/          # Config loading & Visualization
+├── tests/              # TDD Suite (min 85% coverage)
+│   ├── unit/           # Unit tests
+│   └── integration/    # Integration tests
+├── docs/               # PRDs, PLAN.md, TODO.md
+└── notebooks/          # Analysis & Sensitivity Graphs
+```
 
-### Phase 2: Data & Utils
-*   Implement `utils.py` (Windowing/OHE).
-*   Implement `data_gen.py` (Sine generation).
-*   **Milestone:** Run `pytest tests/test_data.py` to verify signal integrity.
+---
 
-### Phase 3: Modeling
-*   Implement `models.py` for FC, RNN, and LSTM.
-*   Verify output shapes for a single forward pass with dummy data.
+## 6. Performance Tracking
 
-### Phase 4: Training Pipeline
-*   Implement `train.py`.
-*   Establish a "baseline" run with low noise to verify the models can learn.
-*   Save model weights for the evaluation phase.
-
-### Phase 5: Evaluation & Reporting
-*   Implement `eval.py` to generate plots.
-*   Run "Extreme Noise" experiments (>80%).
-*   Compile results into the `README.md`.
-
-## 4. Testing Strategy (`pytest`)
-*   **Signal Integrity:** Assert that `generate_pure_sine` produces a signal with the correct frequency (using FFT or zero-crossing counts).
-*   **Time Alignment:** Verify that the 10th sample in an input window corresponds to the 10th sample in the target window.
-*   **Shape Validation:** Ensure the input to the models is exactly `(Batch, 14)` (4 for OHE + 10 for signal).
-*   **Noise Range:** Assert that noise added with $\alpha=0.1$ stays within the $\pm 10\%$ amplitude bound.
-
-## 5. Coding Standards & Maintenance
-*   **Line Limit:** Any file exceeding 150 lines will be refactored into smaller sub-modules or helper files.
-*   **Type Hinting:** Mandatory for all function signatures to prevent runtime data-type errors.
-*   **Documentation:** Every function must have a docstring explaining inputs and expected outputs.
+The system monitors and reports compute resources to ensure optimization and transparency.
+*   **Metrics:** Training time per architecture, inference latency, and peak memory usage.
+*   **Tools:** Uses the `time` library for duration tracking and `psutil` for memory monitoring.
+*   **Reporting:** Metrics are logged during training and exported to the Jupyter Notebook for final visualization and comparison.

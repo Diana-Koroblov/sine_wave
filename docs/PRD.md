@@ -1,83 +1,114 @@
-# Product Requirements Document (PRD): Sine Wave Extraction Comparison
+# Product Requirements Document (PRD): Sine Wave Extraction and Signal De-noising
 
-## 1. Overview & Objective
-The objective of this project is to evaluate and compare the performance of three neural network architectures—**Recurrent Neural Networks (RNN)**, **Long Short-Term Memory (LSTM)**, and **Fully Connected (FC)** networks—in the task of signal de-noising and source separation. Specifically, the models will be trained to extract a specific "pure" sine wave from a composite signal consisting of four noisy sine waves summed together.
+## 1. Project Overview
+This project aims to develop a robust system for extracting individual pure sine waves from a combined noisy signal using deep learning architectures (RNN, LSTM, and Fully Connected networks). The system must handle signal synthesis, noisy dataset generation, and model-based reconstruction with high precision and adherence to strict engineering standards.
 
-## 2. Dataset Generation Requirements
-The dataset will be synthetically generated to provide ground-truth "pure" signals for evaluation.
+---
 
-### 2.1 Base Sine Waves
-Four base sine waves ($S_i$) are defined by the formula:
-$$S_i(t) = A \cdot \sin(2\pi f_i t + \theta_i)$$
-*   **Frequencies ($f$):** User-defined constants (e.g., 5Hz, 10Hz, 15Hz, 20Hz).
-*   **Amplitude ($A$):** User-defined base amplitude.
-*   **Phase ($\theta$):** Initial phase, which can be fixed or randomized.
+## 2. V3NEW Engineering Constraints (MANDATORY)
 
-### 2.2 Noise Formulation
-Noise is added to each individual wave before summation to simulate real-world signal interference.
-$$S'_i(t) = (A \pm \alpha \cdot \text{noise}) \cdot \sin(2\pi f_i t + (\theta \pm \beta \cdot \text{noise}))$$
-*   **Noise Intensity ($\alpha, \beta$):** Percentage relative to the signal (e.g., 10%).
-*   **Noise Distribution:** User-selectable (e.g., Uniform, Gaussian).
-*   **Phase Noise:** Random phase shift in the range $[0, 2\pi]$.
+### 2.1 SDK Layer Architecture
+*   **Encapsulation:** All business logic, including data generation, model definition, training, and evaluation, must be encapsulated within a dedicated SDK (Software Development Kit).
+*   **Strict Access:** External consumers (CLI, GUI, or Scripts) must interact with the system EXCLUSIVELY through the SDK's single entry point. Internal modules must not be accessed directly by external layers.
 
-### 2.3 Sampling & Constraints
-*   **Duration:** strictly 10 seconds.
-*   **Sampling Rate:** 1000Hz (Total of 10,000 samples per wave).
-*   **Window Size:** strictly 10 consecutive samples.
-*   **Combined Signal ($\Sigma_{\text{noise}}$):** $\sum_{i=1}^{4} S'_i(t)$.
-*   **Data Exports:** The generator must provide Pure sine waves ($S_i$), individual noisy waves ($S'_i$), and the combined noisy signal ($\Sigma_{\text{noise}}$).
+### 2.2 Coding Standards
+*   **Linter Compliance:** Mandatory use of the `Ruff` linter. The codebase must maintain exactly 0 violations at all times.
+*   **File Length Limits:** No single file (including implementation and test files) may exceed 150 lines. Large modules must be refactored into smaller, cohesive units.
+*   **Design Principles:** Mandatory use of Object-Oriented Programming (OOP) design. Zero code duplication (DRY principle - Don't Repeat Yourself) is strictly enforced.
 
-## 3. System Architecture & Configuration
+### 2.3 Testing & Quality Assurance
+*   **TDD Approach:** A Test-Driven Development (TDD) approach is mandatory. Tests must be written before or alongside the implementation.
+*   **Coverage:** Minimum 85% test coverage is required for all business logic, verified using `pytest` and `pytest-cov`.
 
-### 3.1 Centralized Configuration (`config.py`)
-All parameters MUST be managed from a single `config.py` file. Hardcoded "magic numbers" are strictly prohibited in the logic files.
-*   **Data Parameters:** Frequencies, amplitude, noise intensity/distribution, sampling rates.
-*   **Model Hyperparameters:** Number of layers, neurons per layer, activation functions, learning rate, batch size, and epochs.
+### 2.4 Configuration Management
+*   **No Hardcoding:** Absolute ban on hardcoded values within the code.
+*   **Centralized Config:** All parameters (frequencies, noise coefficients, model hyperparameters, sampling rates) must be loaded from external configuration files (e.g., `config.py`).
 
-### 3.2 Modularity and Coding Standards
-*   **File Length:** Every file must be strictly under **150 lines** to ensure readability and support unit testing.
-*   **Structure:** Logic must be partitioned into clear modules (e.g., `data_gen.py`, `models.py`, `trainer.py`, `utils.py`).
+### 2.5 Dependency Management
+*   **Tooling:** The project must be managed EXCLUSIVELY using the `uv` package manager.
+*   **Files:** `pyproject.toml` and `uv.lock` must be present and reflect the exact environment.
 
-### 3.3 Unit Testing
-A comprehensive testing suite (e.g., `pytest` or `unittest`) is mandatory.
-*   **Core Modules:** Data generation, sequence window extraction, and model initialization/forward passes must have corresponding test cases.
-*   **Verification:** Tests must verify signal shapes, one-hot encoding consistency, and that noise levels are applied correctly.
+### 2.6 Documentation Structure
+The `docs/` directory must contain the following mandatory files:
+*   `PRD.md`: This comprehensive requirement document.
+*   `PLAN.md`: Mandatory Architecture document detailing design and implementation phases.
+*   `TODO.md`: Granular task tracking.
+*   `PRD_RNN.md`, `PRD_LSTM.md`, `PRD_FC.md`: Dedicated mechanism PRDs for each architecture.
 
-## 4. Training Example Structure
-Training data must be structured to allow the model to learn the extraction of a specific target frequency based on a control input.
+### 2.7 Research & Analysis
+*   **Notebooks:** A `notebooks/` directory must contain Jupyter Notebooks used for:
+    *   Results analysis and comparison.
+    *   Sensitivity analysis (noise vs. reconstruction error).
+    *   Visualizations of signals and training progress.
 
-### 4.1 Target Selection ($C$)
-A **One-Hot Encoded** vector of length 4.
-*   Example: `[0, 0, 1, 0]` signals the model to extract the 3rd sine wave ($S_3$).
+### 2.8 Cost & Performance
+*   **Documentation:** Mandatory documentation of compute resources, training time per model, and runtime optimizations.
 
-### 4.2 Input ($X_{\text{input}}$)
-The input is a concatenation of:
-1.  The One-Hot vector ($C$).
-2.  A window of $N=10$ consecutive samples from the combined noisy signal ($\Sigma_{\text{noise}}$).
+---
 
-### 4.3 Target Output ($Y_{\text{true}}$)
-A window of $N=10$ consecutive samples from the **pure** sine wave ($S_i$), corresponding to the exact same time frame as the input window.
+## 3. Core Project Requirements (Home Task 1)
 
-## 5. Model Training Requirements
-The system must support the implementation and training of three distinct architectures.
+### 3.1 Dataset Generation
 
-### 5.1 Architectures
-*   **Fully Connected (FC):** Standard multi-layer perceptron.
-*   **Simple RNN:** For processing the temporal sequence of the 10-sample window.
-*   **LSTM:** To capture long-term dependencies within the signal window.
+#### 3.1.1 Base Sine Waves
+*   **Definition:** Generate 4 distinct sine waves using the formula: $S_i(t) = A_i \cdot \sin(2\pi f_i t + \theta_i)$.
+*   **Frequencies ($f_i$):** 4 fixed frequencies (e.g., 5Hz, 10Hz, 15Hz, 20Hz).
+*   **Parameters:** Amplitude ($A_i$) and Phase ($\theta_i$) must be configurable.
+*   **Sample Count:** Exactly 10 seconds duration at a 1000Hz sampling rate, resulting in exactly 10,000 samples per wave.
 
-## 6. Deliverables & Evaluation (README)
-A comprehensive `README.md` is required, including:
+#### 3.1.2 Noise Formulation
+*   **Noisy Signal Definition:** $S'_i(t) = (A_i \pm \alpha \cdot \text{noise}) \cdot \sin(2\pi f_i t + (\theta_i \pm \beta \cdot \text{noise}))$.
+*   **Noise Intensity:** $\alpha$ and $\beta$ represent percentage relative to the signal.
+*   **Phase Noise Range:** Strictly in the range $[0, 2\pi]$.
+*   **Distribution:** Noise must strictly follow a **Gaussian** distribution (Parameter Justification).
 
-### 6.1 Performance Analysis
-*   **Tabulated Comparison:** Error metrics (MSE/MAE) across all three architectures.
-*   **Visualizations:** Comparative plots of "Pure" vs "Combined" vs "Reconstructed" signals for various frequencies.
+#### 3.1.3 Sampling & Duration
+*   **Duration:** Exactly 10 seconds.
+*   **Sampling Rate:** 1000Hz.
 
-### 6.2 Edge Cases & Failure Analysis
-*   **Extreme Noise:** Document model behavior and reconstruction failure when noise intensity exceeds 80% of signal amplitude ($\alpha > 0.8$).
-*   **Architectural Limitations:** A detailed explanation of why the FC network struggles with the 10-sample window compared to RNN/LSTM, focusing on the lack of internal state and temporal context processing.
-*   **Noise vs. Error Correlation:** Analysis of how increasing $\alpha$ and $\beta$ impacts the reconstruction quality across different architectures.
+#### 3.1.4 Data Exports (CRITICAL)
+The generator MUST export exactly 10 vectors:
+1.  $\Sigma_{\text{noise}}$: The combined noisy signal (sum of all 4 noisy waves $S'_i$).
+2.  $\Sigma_{\text{pure}}$: The combined pure signal (sum of all 4 pure waves $S_i$).
+3.  $S_{1 \dots 4}$: The 4 pure sine waves.
+4.  $S'_{1 \dots 4}$: The 4 noisy sine waves.
 
-### 6.3 Parameter Justification & Physical Context
-* **Frequency Selection:** Explicit justification for the chosen frequencies ($f$) in relation to the sampling rate (1000Hz) and the highly constrained 10-sample window (10ms). The README must explain how the ratio between the wave's period and the window size affects the models' ability to extract temporal patterns.
-* **Phase & Amplitude:** Explanation of why specific baseline values were chosen and how phase randomization impacts the training distribution.
+### 3.2 Training Example Structure
+
+#### 3.2.1 Target Selection (C)
+*   A randomly generated One-Hot Encoded vector of length 4 (e.g., `[0, 1, 0, 0]` to target $S_2$).
+
+#### 3.2.2 Input ($X_{\text{input}}$)
+*   **Format:** Concatenation of the One-Hot vector $C$ on the **left**, and a dynamically sampled window of exactly 10 consecutive samples from the combined noisy signal ($\Sigma_{\text{noise}}$) on the **right**.
+*   **Window Size:** Exactly 10 samples.
+
+#### 3.2.3 Target Output ($Y_{\text{true}}$)
+*   A window of exactly 10 consecutive samples from the corresponding pure sine wave $S_i$, from the exact same time location as the input window.
+
+### 3.3 Architectures & Training
+
+#### 3.3.1 Models
+Implement and train three separate architectures: RNN, LSTM, and Fully Connected (FC).
+
+#### 3.3.2 Loss Function (CRITICAL)
+*   **Requirement:** The Loss Function MUST be Mean Squared Error (MSE) comparing the predicted 10-sample window and $Y_{\text{true}}$.
+
+#### 3.3.3 Flexible Parameters
+The user must choose, document, and justify:
+*   Number of layers.
+*   Number of perceptrons/neurons per layer.
+*   Activation functions.
+
+---
+
+## 4. Deliverables & Documentation
+
+### 4.1 README.md
+A highly detailed README including:
+*   **Comparative Analysis:** Detailed comparisons explaining exactly when RNN is better, when LSTM is preferred, and when FC is suitable.
+*   **Failure Mode Analysis:** Analysis explaining when and why each network fails.
+*   **Sensitivity Analysis:** Graphs and data demonstrating the correlation between noise intensity and reconstruction quality (error).
+*   **Automated Visualizations:** Mandatory automated exports/screenshots of graphs (pure sine waves, combined signals, training errors, and reconstructions).
+*   **Parameter Justification:** Documentation and rationale for all chosen frequencies, noise levels, and network structures.
+
+
