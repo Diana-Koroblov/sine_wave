@@ -5,7 +5,7 @@ This project aims to develop a robust system for extracting individual pure sine
 
 ---
 
-## 2. V3NEW Engineering Constraints (MANDATORY)
+## 2. Engineering Standards (MANDATORY)
 
 ### 2.1 SDK Layer Architecture
 *   **Encapsulation:** All business logic, including data generation, model definition, training, and evaluation, must be encapsulated within a dedicated SDK (Software Development Kit).
@@ -110,5 +110,15 @@ A highly detailed README including:
 *   **Sensitivity Analysis:** Graphs and data demonstrating the correlation between noise intensity and reconstruction quality (error).
 *   **Automated Visualizations:** Mandatory automated exports/screenshots of graphs (pure sine waves, combined signals, training errors, and reconstructions).
 *   **Parameter Justification:** Documentation and rationale for all chosen frequencies, noise levels, and network structures.
+
+### 4.2 Submission Format
+*   **Final Output:** A PDF document.
+*   **Late Penalty:** -5 points per day of delay.
+
+### 4.3 Project Metadata
+The README.md must contain a final, discrete section for technical metadata, including:
+*   **Version:** 1.00 (`src/shared/version.py`).
+*   **License:** MIT.
+*   **Credits:** Documentation of third-party libraries (numpy, torch, matplotlib, psutil).
 
 
