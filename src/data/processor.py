@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def to_one_hot(index: int, total_classes: int) -> np.ndarray:
     """
     Creates a one-hot encoded vector.
@@ -15,6 +16,7 @@ def to_one_hot(index: int, total_classes: int) -> np.ndarray:
     vec[index] = 1.0
     return vec
 
+
 def sliding_window_split(data: np.ndarray, window_size: int) -> np.ndarray:
     """
     Splits a 1D array into overlapping windows.
@@ -29,9 +31,8 @@ def sliding_window_split(data: np.ndarray, window_size: int) -> np.ndarray:
     """
     if len(data) < window_size:
         return np.array([], dtype=np.float32).reshape(0, window_size)
-    
+
     num_windows = len(data) - window_size + 1
-    # Use stride_tricks for memory efficiency or a simple list comprehension
-    # For a 10s signal at 1000Hz, simple list comprehension is fine.
+    # Simple list comprehension for windowing
     windows = [data[i : i + window_size] for i in range(num_windows)]
     return np.array(windows, dtype=np.float32)

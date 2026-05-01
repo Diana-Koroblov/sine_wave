@@ -32,6 +32,7 @@ During training, the "folded" representation of the RNN is "unrolled" through ti
 ### 4.1 Performance Goals
 *   **Loss Function:** Mandatory use of **Mean Squared Error (MSE)** comparing $Y_{\text{pred}}$ to the ground truth pure window $Y_{\text{true}}$.
 *   **Accuracy:** The RNN must demonstrate superior phase coherence compared to the FC baseline in noise levels up to 50%.
+*   **Generalization:** The model will be trained on a **60,000-sample dataset** and evaluated strictly on the unseen **15% Test set** to prove reconstruction robustness.
 
 ### 4.2 Quality Gates
 *   **Code Quality:** Exactly **0 Ruff violations**.

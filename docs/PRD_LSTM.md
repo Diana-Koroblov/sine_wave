@@ -35,6 +35,7 @@ The LSTM regulates information flow via three specialized gates:
 ### 4.1 Performance Benchmarks
 *   **Loss Function:** Mandatory use of **Mean Squared Error (MSE)**.
 *   **Comparative Goal:** The LSTM is expected to outperform both FC and RNN models in reconstruction quality when noise intensity ($\alpha, \beta$) exceeds 50%.
+*   **Generalization:** The model will be trained on a **60,000-sample dataset** and evaluated strictly on the unseen **15% Test set** to prove reconstruction robustness.
 
 ### 4.2 Quality Gates
 *   **Testing:** Minimum **85% unit test coverage** verifying gate logic and state transitions.

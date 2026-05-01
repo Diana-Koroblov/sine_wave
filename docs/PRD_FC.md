@@ -28,6 +28,7 @@ The model utilizes a "Dense" structure where every neuron in layer $L$ is connec
 ### 4.1 Performance Goals
 *   **Loss Function:** Mandatory use of **Mean Squared Error (MSE)** to measure the squared difference between the predicted window and the ground truth $Y_{\text{true}}$.
 *   **Benchmark Role:** The FC model's performance will serve as the "Floor" metric; RNN and LSTM models are expected to outperform the FC baseline by exploiting temporal periodicity.
+*   **Generalization:** The model will be trained on a **60,000-sample dataset** and evaluated strictly on the unseen **15% Test set** to prove reconstruction robustness.
 
 ### 4.2 Quality Gates
 *   **Linter Compliance:** Exactly **0 Ruff violations**.

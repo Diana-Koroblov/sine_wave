@@ -14,7 +14,7 @@ The **Signal De-noising System** is a standalone Python library (SDK).
 *   **Evaluation & Visualization Engine:** Generates metrics (MSE) and automated plots.
 
 ### 1.3 Components (Module Breakdown)
-To respect the **150-line file limit**, the logic is decomposed as follows:
+To respect the **150-line file limit** (Note: The 150 limit applies to the vertical number of rows per file, not the character line-length), the logic is decomposed as follows:
 *   `src/sdk/interface.py`: Public entry point (`SignalDenoiserSDK`).
 *   `src/sdk/gatekeeper.py`: Validates input data (One-Hot vector structure and window dimensions) before model processing.
 *   `src/data/generator.py`: Mathematical synthesis of $S_i(t)$ and $S'_i(t)$.
@@ -88,13 +88,19 @@ class BaseModel(ABC, torch.nn.Module):
 1.  **Initialization:** `SignalDenoiserSDK` loads `config.py`.
 2.  **Synthesis:** `SineWaveDatasetGenerator` produces 10,000 samples for 4 waves using $S_i(t) = A_i \cdot \sin(2\pi f_i t + \theta_i)$.
 3.  **Noise Injection:** Apply Gaussian noise to generate $S'_i(t)$ and sum them to form $\Sigma_{\text{noise}}$.
-4.  **Sampling Loop (Training Step):**
-    *   Select random index $t$ and target $i \in \{1,2,3,4\}$.
-    *   Generate One-Hot vector $C$ for target $i$.
-    *   Extract 10-sample window from $\Sigma_{\text{noise}}$ at index $t$.
-    *   Concatenate $C$ (left) + Window (right) to form $X_{\text{input}}$.
-    *   **Gatekeeping:** `Gatekeeper` validates $X_{\text{input}}$ dimensions and values.
-    *   Extract 10-sample ground truth window from $S_i$ at index $t$ ($Y_{\text{true}}$).
+4.  **Dataset Generation & Partitioning:**
+    *   The Dataset Generation Engine samples exactly **60,000** random $(X_{\text{input}}, Y_{\text{true}})$ pairs.
+    *   **Sampling Logic:** For each example:
+        *   Select random index $t \in [0, 9990]$. (Rationale: Since the total generated signal contains 10,000 samples and the extraction window requires 10 consecutive samples, $t$ cannot exceed 9,990 to prevent index out-of-bounds errors).
+        *   Select target wave $i \in \{1,2,3,4\}$ and generate its One-Hot vector $C$.
+        *   Extract a 10-sample window from $\Sigma_{\text{noise}}$ spanning indices $[t, t+10)$.
+        *   Concatenate $C$ (left) + Window (right) to form $X_{\text{input}}$.
+        *   **Gatekeeping:** `Gatekeeper` validates $X_{\text{input}}$ dimensions and values.
+        *   Extract the corresponding 10-sample window from pure signal $S_i$ spanning $[t, t+10)$ as $Y_{\text{true}}$.
+    *   **Partitioning Strategy:** The 60,000 examples are split using a strict **70/15/15** ratio:
+        *   **Training Set (70%):** 42,000 examples for weight optimization.
+        *   **Validation Set (15%):** 9,000 examples for hyperparameter tuning and overfitting monitoring.
+        *   **Test Set (15%):** 9,000 examples for final, unbiased performance reporting.
 5.  **Execution:** $X_{\text{input}}$ passes through the selected model (FC/RNN/LSTM).
 6.  **Optimization:** Compute **MSE Loss** between prediction and $Y_{\text{true}}$; perform backpropagation.
 
