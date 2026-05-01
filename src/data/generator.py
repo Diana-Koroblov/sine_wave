@@ -116,9 +116,9 @@ class SineWaveDatasetGenerator:
             vectors[f"pure_{i + 1}"] = pure_waves[i]
             vectors[f"noisy_{i + 1}"] = noisy_waves[i]
 
-        # Verification of Constraints: Assert exactly 10,000 samples per wave
+        # Verification of Constraints: Assert the configured sample count per wave
         for key, vec in vectors.items():
-            if vec.shape[0] != 10000:
+            if vec.shape[0] != config.TOTAL_SAMPLES:
                 raise ValueError(f"Vector {key} has incorrect shape: {vec.shape}")
 
         return vectors

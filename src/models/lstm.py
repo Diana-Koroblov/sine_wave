@@ -20,11 +20,13 @@ class LSTMModel(BaseModel):
             output_size: Dimension of the output window.
         """
         super().__init__(input_size, output_size)
+        self.context_size = config.NUM_FREQUENCIES
+        self.window_size = config.WINDOW_SIZE
 
         # Input per time step: 4 (OHE context) + 1 (Signal sample) = 5
         # Uses triple-gate logic and dual-state system (Hidden and Cell states)
         self.lstm = nn.LSTM(
-            input_size=5,
+            input_size=self.context_size + 1,
             hidden_size=config.HIDDEN_SIZE,
             num_layers=config.NUM_LAYERS,
             batch_first=True,
@@ -45,12 +47,12 @@ class LSTMModel(BaseModel):
             torch.Tensor: Denoised output of shape (Batch, 10).
         """
         # Feature extraction: context (4) and noisy signal (10)
-        ohe = x[:, :4]  # (Batch, 4)
-        signal = x[:, 4:]  # (Batch, 10)
+        ohe = x[:, : self.context_size]  # (Batch, context_size)
+        signal = x[:, self.context_size :]  # (Batch, window_size)
 
         # Sequence preparation
         signal = signal.unsqueeze(-1)  # (Batch, 10, 1)
-        ohe_expanded = ohe.unsqueeze(1).expand(-1, 10, -1)  # (Batch, 10, 4)
+        ohe_expanded = ohe.unsqueeze(1).expand(-1, self.window_size, -1)
 
         # Input formation for the Gradient Highway: (Batch, 10, 5)
         lstm_input = torch.cat([ohe_expanded, signal], dim=-1)

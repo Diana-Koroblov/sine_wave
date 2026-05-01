@@ -1,5 +1,7 @@
 import numpy as np
 
+import src.shared.config as config
+
 
 class Gatekeeper:
     """
@@ -14,18 +16,22 @@ class Gatekeeper:
         Args:
             x: Input array (Batch, 14).
         """
-        if x.shape[-1] != 14:
-            raise ValueError(f"Gatekeeper Error: Input must have 14 elements, got {x.shape[-1]}")
+        if x.shape[-1] != config.INPUT_SIZE:
+            raise ValueError(
+                f"Gatekeeper Error: Input must have {config.INPUT_SIZE} elements, got {x.shape[-1]}"
+            )
 
-        # Validate One-Hot component (first 4 elements)
-        ohe_part = x[..., :4]
+        # Validate One-Hot component (first config.NUM_FREQUENCIES elements)
+        ohe_part = x[..., : config.NUM_FREQUENCIES]
         if not np.all(np.isin(ohe_part, [0, 1])):
             raise ValueError("Gatekeeper Error: One-Hot vector must contain only 0s and 1s")
         if not np.all(np.isclose(np.sum(ohe_part, axis=-1), 1.0)):
             raise ValueError("Gatekeeper Error: One-Hot vector must have exactly one '1'")
 
     @staticmethod
-    def validate_window_dimensions(window: np.ndarray, expected_size: int = 10) -> None:
+    def validate_window_dimensions(
+        window: np.ndarray, expected_size: int = config.WINDOW_SIZE
+    ) -> None:
         """
         Validates the window dimensions.
         Args:

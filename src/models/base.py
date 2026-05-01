@@ -3,6 +3,8 @@ from abc import ABC, abstractmethod
 import torch
 import torch.nn as nn
 
+import src.shared.config as config
+
 
 class BaseModel(ABC, nn.Module):
     """
@@ -24,10 +26,10 @@ class BaseModel(ABC, nn.Module):
 
     def _validate_dimensions(self) -> None:
         """Ensures the dimensions match the core project requirements."""
-        if self.input_size != 14:
-            raise ValueError(f"Expected input_size 14, got {self.input_size}")
-        if self.output_size != 10:
-            raise ValueError(f"Expected output_size 10, got {self.output_size}")
+        if self.input_size != config.INPUT_SIZE:
+            raise ValueError(f"Expected input_size {config.INPUT_SIZE}, got {self.input_size}")
+        if self.output_size != config.OUTPUT_SIZE:
+            raise ValueError(f"Expected output_size {config.OUTPUT_SIZE}, got {self.output_size}")
 
     @abstractmethod
     def forward(self, x: torch.Tensor) -> torch.Tensor:

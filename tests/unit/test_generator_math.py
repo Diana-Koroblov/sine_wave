@@ -129,3 +129,15 @@ def test_summation_math():
 
     np.testing.assert_allclose(vectors["sum_pure"], manual_sum_pure, atol=1e-5)
     np.testing.assert_allclose(vectors["sum_noise"], manual_sum_noise, atol=1e-5)
+
+
+def test_pure_waves_match_configured_frequencies():
+    """Verify each pure wave's dominant frequency matches the configured value."""
+    gen = SineWaveDatasetGenerator()
+    pure_waves = gen._create_pure_waves()
+    frequency_bins = np.fft.rfftfreq(config.TOTAL_SAMPLES, d=1 / config.SAMPLING_RATE)
+
+    for wave, expected_frequency in zip(pure_waves, config.FREQUENCIES, strict=True):
+        magnitude = np.abs(np.fft.rfft(wave))
+        dominant_frequency = frequency_bins[1 + np.argmax(magnitude[1:])]
+        assert np.isclose(dominant_frequency, expected_frequency, atol=0.1)

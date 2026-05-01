@@ -20,10 +20,12 @@ class RNNModel(BaseModel):
             output_size: Dimension of the output window.
         """
         super().__init__(input_size, output_size)
+        self.context_size = config.NUM_FREQUENCIES
+        self.window_size = config.WINDOW_SIZE
 
         # Input per time step: 4 (OHE context) + 1 (Signal sample) = 5
         self.rnn = nn.RNN(
-            input_size=5,
+            input_size=self.context_size + 1,
             hidden_size=config.HIDDEN_SIZE,
             num_layers=config.NUM_LAYERS,
             batch_first=True,
@@ -45,14 +47,14 @@ class RNNModel(BaseModel):
             torch.Tensor: Denoised output of shape (Batch, 10).
         """
         # Split input into One-Hot context and Signal window
-        ohe = x[:, :4]  # (Batch, 4)
-        signal = x[:, 4:]  # (Batch, 10)
+        ohe = x[:, : self.context_size]  # (Batch, context_size)
+        signal = x[:, self.context_size :]  # (Batch, window_size)
 
         # Reshape signal to sequence format: (Batch, 10, 1)
         signal = signal.unsqueeze(-1)
 
         # Expand context to every time step: (Batch, 10, 4)
-        ohe_expanded = ohe.unsqueeze(1).expand(-1, 10, -1)
+        ohe_expanded = ohe.unsqueeze(1).expand(-1, self.window_size, -1)
 
         # Concatenate: (Batch, 10, 5)
         rnn_input = torch.cat([ohe_expanded, signal], dim=-1)

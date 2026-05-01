@@ -105,28 +105,28 @@
     - [x] Audit the row count for `fc.py`, `rnn.py`, and `lstm.py` to ensure they are within the 150-row limit.
     - [x] Ensure `ruff check .` returns zero violations for all three model files.
     - [x] **Enhanced `BaseModel`** to support recurrent layer weight initialization.
-- [ ] **Verify Model Integrity (TDD)**
+- [x] **Verify Model Integrity (TDD)**
     - **DoD:** `tests/unit/test_models.py` verifies forward pass shapes (14-in, 10-out).
-    - [ ] Create `tests/unit/test_models.py`.
-    - [ ] Row-Count Audit: Verify `test_models.py` is < 150 rows; split if necessary.
-    - [ ] Write a test case for `FCModel` that asserts the output shape is exactly `(1, 10)` given a `(1, 14)` input.
-    - [ ] Write a test case for `RNNModel` that asserts the output shape is exactly `(1, 10)` given a `(1, 14)` input.
-    - [ ] Write a test case for `LSTMModel` that asserts the output shape is exactly `(1, 10)` given a `(1, 14)` input.
-    - [ ] Write a test to ensure `init_weights` modifies the default parameters (proves initialization logic is executing).
+    - [x] Create `tests/unit/test_models.py`.
+    - [x] Row-Count Audit: Verify `test_models.py` is < 150 rows; split if necessary.
+    - [x] Write a test case for `FCModel` that asserts the output shape is exactly `(1, 10)` given a `(1, 14)` input.
+    - [x] Write a test case for `RNNModel` that asserts the output shape is exactly `(1, 10)` given a `(1, 14)` input.
+    - [x] Write a test case for `LSTMModel` that asserts the output shape is exactly `(1, 10)` given a `(1, 14)` input.
+    - [x] Write a test to ensure `init_weights` modifies the default parameters (proves initialization logic is executing).
     - **DoD:** `tests/unit/` contains full coverage (>85%) for Phase 4 components.
-    - [ ] Run `uv run pytest --cov=src/models` and verify the coverage meets the 85% project gate.
+    - [x] Run `uv run pytest --cov=src/models` and verify the coverage meets the 85% project gate.
 
 ## Phase 5: Training Pipeline & Dynamic Sampling
-- [ ] **Implement Dataset Partitioning Logic**
+- [x] **Implement Dataset Partitioning Logic**
     - **DoD:** Implementation of a strict 70/15/15 split (Training, Validation, and Test sets) to evaluate model generalization.
-    - [ ] Update `prepare_data()` logic in `src/sdk/interface.py`.
-    - [ ] Row-Count Audit: Verify `interface.py` is < 150 rows; split if necessary.
-    - [ ] Calculate split indices for the 60,000 examples (42,000 / 9,000 / 9,000).
-    - [ ] Use `numpy.random.permutation` to shuffle indices before splitting to ensure unbiased sets.
-    - [ ] Create a storage mechanism (e.g., dictionary or custom class) within the SDK to hold the partitioned arrays.
+    - [x] Update `prepare_data()` logic in `src/sdk/interface.py`.
+    - [x] Row-Count Audit: Verify `interface.py` is < 150 rows; split if necessary.
+    - [x] Calculate split indices for the 60,000 examples (42,000 / 9,000 / 9,000).
+    - [x] Use `numpy.random.permutation` to shuffle indices before splitting to ensure unbiased sets.
+    - [x] Create a storage mechanism (e.g., dictionary or custom class) within the SDK to hold the partitioned arrays.
     - **DoD:** Dataset generation engine yields exactly **60,000** random sample windows.
-    - [ ] Implement the loop in the SDK that calls the `SineWaveDatasetGenerator` to build the full 60k dataset.
-    - [ ] Verify that every single $X_{input}$ is shape (14,) and every $Y_{true}$ is shape (10,).
+    - [x] Implement the loop in the SDK that calls the `SineWaveDatasetGenerator` to build the full 60k dataset.
+    - [x] Verify that every single $X_{input}$ is shape (14,) and every $Y_{true}$ is shape (10,).
 - [ ] **Implement Data Integrity & Validation Checks**
     - **DoD:** Integration of `Gatekeeper` logic to verify that generated vectors match the required shapes and types before training.
     - [ ] Update `src/sdk/gatekeeper.py` if necessary for batch validation.
