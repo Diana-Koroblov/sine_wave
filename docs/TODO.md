@@ -127,53 +127,53 @@
     - **DoD:** Dataset generation engine yields exactly **60,000** random sample windows.
     - [x] Implement the loop in the SDK that calls the `SineWaveDatasetGenerator` to build the full 60k dataset.
     - [x] Verify that every single $X_{input}$ is shape (14,) and every $Y_{true}$ is shape (10,).
-- [ ] **Implement Data Integrity & Validation Checks**
+- [x] **Implement Data Integrity & Validation Checks**
     - **DoD:** Integration of `Gatekeeper` logic to verify that generated vectors match the required shapes and types before training.
-    - [ ] Update `src/sdk/gatekeeper.py` if necessary for batch validation.
-    - [ ] Row-Count Audit: Verify `gatekeeper.py` is < 150 rows; split if necessary.
-    - [ ] Integrate a call to `Gatekeeper.validate_input_vector()` inside the dataset creation loop.
-    - [ ] Add a try-except block to catch `ValueError` during data generation and log clear error messages.
-- [ ] **Implement Dynamic Sampling Logic**
+    - [x] Update `src/sdk/gatekeeper.py` if necessary for batch validation.
+    - [x] Row-Count Audit: Verify `gatekeeper.py` is < 150 rows; split if necessary.
+    - [x] Integrate a call to `Gatekeeper.validate_input_vector()` inside the dataset creation loop.
+    - [x] Add a try-except block to catch `ValueError` during data generation and log clear error messages.
+- [x] **Implement Dynamic Sampling Logic**
     - **DoD:** Verified correct concatenation of the One-Hot vector $C$ (left) and the 10-sample window (right).
-    - [ ] Implement the slicing logic to extract 10 samples from index $t$ to $t+10$.
-    - [ ] Use `numpy.concatenate` to join the 4-bit OHE vector and the 10-bit signal window.
-    - [ ] Verify that the OHE vector is always on the "left" (indices 0-3) of the resulting 14-element vector.
-- [ ] **Implement Training Orchestrator**
+    - [x] Implement the slicing logic to extract 10 samples from index $t$ to $t+10$.
+    - [x] Use `numpy.concatenate` to join the 4-bit OHE vector and the 10-bit signal window.
+    - [x] Verify that the OHE vector is always on the "left" (indices 0-3) of the resulting 14-element vector.
+- [x] **Implement Training Orchestrator**
     - **DoD:** `src/training/trainer.py` handles the generic loop, backpropagation, and MSE calculation.
-    - [ ] Create `src/training/trainer.py` and define the `ModelTrainer` class.
-    - [ ] Row-Count Audit: Verify `trainer.py` is < 150 rows; split if necessary.
-    - [ ] Implement the `train_epoch()` method using `torch.optim.Adam` and `torch.nn.MSELoss`.
-    - [ ] Implement a validation step after each epoch to monitor loss on the 15% Validation set.
-    - [ ] Add logic to save the best model weights based on validation loss.
-- [ ] **Implement Performance & Resource Tracking**
+    - [x] Create `src/training/trainer.py` and define the `ModelTrainer` class.
+    - [x] Row-Count Audit: Verify `trainer.py` is < 150 rows; split if necessary.
+    - [x] Implement the `train_epoch()` method using `torch.optim.Adam` and `torch.nn.MSELoss`.
+    - [x] Implement a validation step after each epoch to monitor loss on the 15% Validation set.
+    - [x] Add logic to save the best model weights based on validation loss.
+- [x] **Implement Performance & Resource Tracking**
     - **DoD:** SDK logs training duration (via `time`) and peak memory usage (via `psutil`) for the performance report.
-    - [ ] Record start time and initial memory before the training loop begins.
-    - [ ] Capture `psutil.Process().memory_info().rss` at the end of each epoch to find the peak memory.
-    - [ ] Return a dictionary containing `total_time` and `peak_ram_mb` to the SDK.
-- [ ] **Apply TDD to the Training Orchestrator**
+    - [x] Record start time and initial memory before the training loop begins.
+    - [x] Capture `psutil.Process().memory_info().rss` at the end of each epoch to find the peak memory.
+    - [x] Return a dictionary containing `total_time` and `peak_ram_mb` to the SDK.
+- [x] **Apply TDD to the Training Orchestrator**
     - **DoD:** Unit tests in `tests/unit/` verify the generic training loop, MSE calculation logic, and backpropagation flow using mock data.
-    - [ ] Create `tests/unit/test_trainer.py`.
-    - [ ] Row-Count Audit: Verify `test_trainer.py` is < 150 rows; split if necessary.
-    - [ ] Write `test_trainer_loss_decreases` using a small dummy dataset to ensure the model is learning.
-    - [ ] Write `test_trainer_resource_tracking` to verify that time and memory values are being recorded as non-zero.
+    - [x] Create `tests/unit/test_trainer.py`.
+    - [x] Row-Count Audit: Verify `test_trainer.py` is < 150 rows; split if necessary.
+    - [x] Write `test_trainer_loss_decreases` using a small dummy dataset to ensure the model is learning.
+    - [x] Write `test_trainer_resource_tracking` to verify that time and memory values are being recorded as non-zero.
     - **DoD:** `tests/unit/` contains full coverage (>85%) for Phase 5 components.
-    - [ ] Run `uv run pytest --cov=src/training` and confirm the 85% requirement is met.
+    - [x] Run `uv run pytest --cov=src/training` and confirm the 85% requirement is met.
 
 ## Phase 6: Research, Visualization & Notebooks
-- [ ] **Initialize and Integrate Research Notebook**
+- [x] **Initialize and Integrate Research Notebook**
     - **DoD:** `notebooks/analysis.ipynb` created, importing logic exclusively via the SDK layer.
-    - [ ] Create `notebooks/analysis.ipynb`.
-    - [ ] Row-Count Audit: Verify `analysis.ipynb` (as JSON) or logic is managed cleanly.
-    - [ ] Add the boilerplate cell to resolve project imports (`sys.path.append`).
-    - [ ] Import `SignalDenoiserSDK` and initialize it with `config.py`.
-    - [ ] Demonstrate data generation and partitioning by calling `sdk.prepare_data()`.
-- [ ] **Perform Model Evaluation on Test Set**
+    - [x] Create `notebooks/analysis.ipynb`.
+    - [x] Row-Count Audit: Verify `analysis.ipynb` (as JSON) or logic is managed cleanly.
+    - [x] Add the boilerplate cell to resolve project imports (`sys.path.append`).
+    - [x] Import `SignalDenoiserSDK` and initialize it with `config.py`.
+    - [x] Demonstrate data generation and partitioning by calling `sdk.prepare_data()`.
+- [x] **Perform Model Evaluation on Test Set**
     - **DoD:** Comparative metrics (MSE) reported specifically for the unseen Test Set to demonstrate true performance.
-    - [ ] Update `src/sdk/interface.py` with `evaluate_on_test_set()`.
-    - [ ] Row-Count Audit: Verify `interface.py` is < 150 rows; split if necessary.
-    - [ ] Write logic to iterate through the Test Set and generate predictions for all 3 models.
-    - [ ] Calculate final MSE, MAE, and Pearson Correlation for each architecture.
-    - [ ] Format the results into a clear summary table for the notebook and README.
+    - [x] Update `src/sdk/interface.py` with `evaluate_on_test_set()`.
+    - [x] Row-Count Audit: Verify `interface.py` is < 150 rows; split if necessary.
+    - [x] Write logic to iterate through the Test Set and generate predictions for all 3 models.
+    - [x] Calculate final MSE, MAE, and Pearson Correlation for each architecture.
+    - [x] Format the results into a clear summary table for the notebook and README.
 - [ ] **Sensitivity Analysis & Automated Visualizations**
     - **DoD:** Graphs showing reconstruction quality vs. noise intensity (α, β) and training loss curves exported to the `assets/` directory.
     - [ ] Create `src/utils/visuals.py` and implement `Visualizer` class.

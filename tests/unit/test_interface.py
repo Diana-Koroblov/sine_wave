@@ -83,7 +83,7 @@ def test_prepare_data_raises_for_invalid_window_shapes(monkeypatch):
     monkeypatch.setattr(interface_module, "SineWaveDatasetGenerator", FakeGenerator)
     monkeypatch.setattr(interface_module.np.random, "randint", fake_randint)
 
-    with pytest.raises(ValueError, match="Expected X_input shape"):
+    with pytest.raises(ValueError, match="Expected window size"):
         SignalDenoiserSDK().prepare_data()
 
 
@@ -112,7 +112,7 @@ def test_prepare_data_raises_for_invalid_target_shapes(monkeypatch):
     monkeypatch.setattr(interface_module, "SineWaveDatasetGenerator", FakeGenerator)
     monkeypatch.setattr(interface_module.np.random, "randint", fake_randint)
 
-    with pytest.raises(ValueError, match="Expected Y_true shape"):
+    with pytest.raises(ValueError, match="Expected window size"):
         SignalDenoiserSDK().prepare_data()
 
 

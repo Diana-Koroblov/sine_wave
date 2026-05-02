@@ -16,6 +16,8 @@ class Gatekeeper:
         Args:
             x: Input array (Batch, 14).
         """
+        if not np.issubdtype(x.dtype, np.number):
+            raise ValueError("Gatekeeper Error: Input vector must contain numeric values")
         if x.shape[-1] != config.INPUT_SIZE:
             raise ValueError(
                 f"Gatekeeper Error: Input must have {config.INPUT_SIZE} elements, got {x.shape[-1]}"
@@ -29,6 +31,17 @@ class Gatekeeper:
             raise ValueError("Gatekeeper Error: One-Hot vector must have exactly one '1'")
 
     @staticmethod
+    def validate_input_batch(batch: np.ndarray) -> None:
+        """
+        Validates a batch of input vectors before training.
+        Args:
+            batch: Batch array (Batch, 14).
+        """
+        if batch.ndim != 2:
+            raise ValueError("Gatekeeper Error: Input batch must be a 2D array")
+        Gatekeeper.validate_input_vector(batch)
+
+    @staticmethod
     def validate_window_dimensions(
         window: np.ndarray, expected_size: int = config.WINDOW_SIZE
     ) -> None:
@@ -38,6 +51,8 @@ class Gatekeeper:
             window: Sample window array.
             expected_size: Expected number of samples.
         """
+        if not np.issubdtype(window.dtype, np.number):
+            raise ValueError("Gatekeeper Error: Window must contain numeric values")
         if window.shape[-1] != expected_size:
             raise ValueError(
                 f"Gatekeeper Error: Expected window size {expected_size}, got {window.shape[-1]}"
