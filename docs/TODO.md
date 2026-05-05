@@ -190,21 +190,21 @@
     - [x] Verify that sensitive sweep logic correctly collects and returns metrics.
 
 ## Phase 7: Final Documentation & Quality Polish
-- [ ] **Assemble Technical README.md**
+- [x] **Assemble Technical README.md**
     - **DoD:** Comprehensive User Manual included.
-    - [ ] Update `README.md` with Installation, Usage, and Configuration sections.
-    - [ ] Row-Count Audit: Verify `README.md` is managed cleanly (use linked docs if > 150 lines).
-    - [ ] Create the performance comparison table.
-    - [ ] Insert the refined "Parameter Rationale & Engineering Choices" text.
-- [ ] **Integrate Research Visualizations**
+    - [x] Update `README.md` with Installation, Usage, and Configuration sections.
+    - [x] Row-Count Audit: Verify `README.md` is managed cleanly (use linked docs if > 150 lines).
+    - [x] Create the performance comparison table.
+    - [x] Insert the refined "Parameter Rationale & Engineering Choices" text.
+- [x] **Integrate Research Visualizations**
     - **DoD:** README contains high-resolution plots.
-    - [ ] Link PNG files and add technical captions to `README.md`.
-- [ ] **Finalize Professional Documentation Suite**
+    - [x] Link PNG files and add technical captions to `README.md`.
+- [x] **Finalize Professional Documentation Suite**
     - **DoD:** PRDs and Logs finalized.
-    - [ ] Update `docs/PRD_RNN.md`, `docs/PRD_LSTM.md`, `docs/PRD_FC.md`.
-    - [ ] Row-Count Audit: Verify each PRD is < 150 rows; split if necessary.
-    - [ ] Create `docs/PROMPT_LOG.md`.
-    - [ ] Row-Count Audit: Verify `PROMPT_LOG.md` is < 150 rows; split if necessary.
+    - [x] Update `docs/PRD_RNN.md`, `docs/PRD_LSTM.md`, `docs/PRD_FC.md`.
+    - [x] Row-Count Audit: Verify each PRD is < 150 rows; split if necessary.
+    - [x] Create `docs/PROMPT_LOG.md`.
+    - [x] Row-Count Audit: Verify `PROMPT_LOG.md` is < 150 rows; split if necessary.
 - [ ] **Global Versioning & Package Integrity**
     - **DoD:** Version 1.00 established.
     - [ ] Create `src/shared/version.py`.

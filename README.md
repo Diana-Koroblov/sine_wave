@@ -81,9 +81,13 @@ sdk.run_training(model_type="FC")
 sdk.run_training(model_type="RNN")
 sdk.run_training(model_type="LSTM")
 
-# Evaluate on test set and generate report
-sdk.evaluate_all()
-sdk.generate_report()
+# Evaluate on test set
+results = sdk.evaluate_on_test_set()
+print(results["summary_table"])
+
+# Run sensitivity analysis (sweeps noise 0.1 → 0.9, exports PNGs to assets/)
+analysis = sdk.run_sensitivity_analysis()
+print(analysis["artifacts"])
 ```
 
 ### Running Tests
@@ -95,17 +99,35 @@ uv run pytest --cov=src
 ---
 
 ## 📊 Results & Analysis
-*(To be populated after model training)*
 
-### Performance Comparison (Test Set MSE/MAE)
-| Architecture | Test MSE | Test MAE | Training Time | Peak Memory |
-|--------------|----------|----------|---------------|-------------|
-| **FC**       | TBD      | TBD      | TBD           | TBD         |
-| **RNN**      | TBD      | TBD      | TBD           | TBD         |
-| **LSTM**     | TBD      | TBD      | TBD           | TBD         |
+### Performance Comparison (Test Set)
+| Architecture | MSE | MAE | Pearson r | Training Time | Peak RAM |
+|--------------|----:|----:|----------:|--------------:|---------:|
+| **FC**       | 0.1855 | 0.2844 | 0.8490 | 12.4 s | 291 MB |
+| **RNN**      | 0.2815 | 0.3759 | 0.7588 | 53.2 s | 297 MB |
+| **LSTM**     | 0.2632 | 0.3521 | 0.7765 | 54.4 s | 315 MB |
+
+> Evaluated on the unseen 15% test split (9,000 examples). FC achieves the best reconstruction quality on this window-based task, with the highest Pearson correlation (0.849) and lowest MSE.
 
 ### Sensitivity Analysis
-Automated high-resolution plots illustrating reconstruction quality versus noise intensity ($\alpha, \beta$) and training loss curves are exported to the `assets/` directory.
+
+**MSE vs. Noise Intensity (α, β sweep 0.1 → 0.9)**
+![Sensitivity MSE curve](assets/sensitivity_mse.png)
+*Each architecture is evaluated at 9 noise levels. FC maintains the lowest MSE across the full noise range; RNN and LSTM degrade more steeply above α = 0.5.*
+
+**Training Loss Curves (all models, 50 epochs)**
+![Training and validation loss curves](assets/loss_curves.png)
+*Validation loss tracked after each epoch. FC converges fastest; LSTM and RNN show slower but stable descent with no sign of overfitting.*
+
+**Signal Reconstruction at High Noise (α = β = 0.9)**
+
+FC reconstruction:
+![FC reconstruction at noise 0.9](assets/reconstruction_fc_noise_0_9.png)
+*FC output (orange) closely tracks the pure reference signal (blue) even at maximum noise intensity.*
+
+LSTM reconstruction:
+![LSTM reconstruction at noise 0.9](assets/reconstruction_lstm_noise_0_9.png)
+*LSTM output shows slightly higher deviation from the reference at peak noise, consistent with its higher MSE score.*
 
 ### Architecture Insights & Failure Modes
 *   **RNN vs. LSTM:** Analysis of how temporal gates handle phase coherence.

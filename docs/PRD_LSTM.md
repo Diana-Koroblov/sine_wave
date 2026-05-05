@@ -49,3 +49,14 @@ The SDK must systematically monitor the LSTM's execution footprint:
 
 ### 5.2 Efficiency Justification
 The README must include a cost-benefit analysis of the LSTM, justifying the increased compute cost (memory/time) through its superior reconstruction accuracy in high-noise environments.
+
+## 6. Achieved Results (Test Set — 60,000 samples, 50 epochs)
+| Metric | Value |
+|--------|------:|
+| MSE | 0.2632 |
+| MAE | 0.3521 |
+| Pearson Correlation | 0.7765 |
+| Training Time | 54.4 s |
+| Peak RAM | 315 MB |
+
+**Verdict:** LSTM ranked **second** behind FC. The triple-gate mechanism improves over the vanilla RNN (higher Pearson r, lower MSE) but cannot match FC on short 10-sample windows where long-range dependencies are absent. The LSTM carries the highest memory overhead (+24 MB over FC) for a net quality deficit — the gating advantage only materialises at longer sequence lengths or significantly higher noise intensities than tested here.
