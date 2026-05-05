@@ -8,6 +8,7 @@ from src.data.generator import SineWaveDatasetGenerator
 from src.data.processor import to_one_hot
 from src.sdk.evaluation import create_model, evaluate_model, format_metrics_table
 from src.sdk.gatekeeper import Gatekeeper
+from src.sdk.sensitivity import run_sensitivity_analysis as run_sdk_sensitivity_analysis
 from src.training.trainer import ModelTrainer
 
 
@@ -29,6 +30,7 @@ class SignalDenoiserSDK:
         self.config_path = config_path
         self.dataset_splits: dict[str, dict[str, np.ndarray]] = {}
         self.trained_models: dict[str, Any] = {}
+        self.training_runs: dict[str, dict[str, Any]] = {}
         # TODO: Load config dynamically in Phase 2/3
 
     def _build_training_example(
@@ -58,14 +60,14 @@ class SignalDenoiserSDK:
         return np.concatenate([class_vector, noisy_window], dtype=np.float32)
 
     def _split_dataset(
-        self, inputs: np.ndarray, targets: np.ndarray
+        self, inputs: np.ndarray, targets: np.ndarray, dataset_size: int
     ) -> dict[str, dict[str, np.ndarray]]:
-        permutation = np.random.permutation(config.DATASET_SIZE)
+        permutation = np.random.permutation(dataset_size)
         shuffled_inputs = inputs[permutation]
         shuffled_targets = targets[permutation]
 
-        train_end = int(config.DATASET_SIZE * config.TRAIN_SPLIT)
-        validation_end = train_end + int(config.DATASET_SIZE * config.VAL_SPLIT)
+        train_end = int(dataset_size * config.TRAIN_SPLIT)
+        validation_end = train_end + int(dataset_size * config.VAL_SPLIT)
 
         return {
             "train": {
@@ -82,17 +84,17 @@ class SignalDenoiserSDK:
             },
         }
 
-    def prepare_data(self) -> dict[str, dict[str, np.ndarray]]:
+    def prepare_data(self, dataset_size: int = config.DATASET_SIZE) -> dict[str, dict[str, np.ndarray]]:
         """
         Generates signals and partitions the dataset (70/15/15).
         Implemented in Phase 3 & 5.
         """
         vectors = SineWaveDatasetGenerator().generate_all_vectors()
         max_start_index = config.TOTAL_SAMPLES - config.WINDOW_SIZE
-        inputs = np.zeros((config.DATASET_SIZE, config.INPUT_SIZE), dtype=np.float32)
-        targets = np.zeros((config.DATASET_SIZE, config.OUTPUT_SIZE), dtype=np.float32)
+        inputs = np.zeros((dataset_size, config.INPUT_SIZE), dtype=np.float32)
+        targets = np.zeros((dataset_size, config.OUTPUT_SIZE), dtype=np.float32)
 
-        for example_index in range(config.DATASET_SIZE):
+        for example_index in range(dataset_size):
             target_index = int(np.random.randint(0, config.NUM_FREQUENCIES))
             start_index = int(np.random.randint(0, max_start_index + 1))
             try:
@@ -111,10 +113,15 @@ class SignalDenoiserSDK:
             targets[example_index] = y_true
 
         Gatekeeper.validate_input_batch(inputs)
-        self.dataset_splits = self._split_dataset(inputs, targets)
+        self.dataset_splits = self._split_dataset(inputs, targets, dataset_size)
         return self.dataset_splits
 
-    def run_training(self, model_type: str) -> dict[str, Any]:
+    def run_training(
+        self,
+        model_type: str,
+        epochs: int = config.EPOCHS,
+        batch_size: int = config.BATCH_SIZE,
+    ) -> dict[str, Any]:
         """
         Executes the training pipeline for a specific architecture.
         Args:
@@ -128,11 +135,16 @@ class SignalDenoiserSDK:
             self.prepare_data()
 
         trainer = ModelTrainer(model)
-        training_result = trainer.fit(self.dataset_splits)
+        training_result = trainer.fit(self.dataset_splits, epochs=epochs, batch_size=batch_size)
         self.trained_models[normalized_model_type] = trainer.model
+        self.training_runs[normalized_model_type] = training_result
         return {"model_type": normalized_model_type, **training_result}
 
-    def evaluate_on_test_set(self) -> dict[str, Any]:
+    def evaluate_on_test_set(
+        self,
+        epochs: int = config.EPOCHS,
+        batch_size: int = config.BATCH_SIZE,
+    ) -> dict[str, Any]:
         """Train missing models, score the unseen test set, and return a summary table."""
         if not self.dataset_splits:
             self.prepare_data()
@@ -141,7 +153,7 @@ class SignalDenoiserSDK:
         metrics_by_model = {}
         for model_type in ("FC", "RNN", "LSTM"):
             if model_type not in self.trained_models:
-                self.run_training(model_type)
+                self.run_training(model_type, epochs=epochs, batch_size=batch_size)
             metrics_by_model[model_type] = evaluate_model(
                 self.trained_models[model_type],
                 test_split["inputs"],
@@ -152,6 +164,10 @@ class SignalDenoiserSDK:
             "metrics": metrics_by_model,
             "summary_table": format_metrics_table(metrics_by_model),
         }
+
+    def run_sensitivity_analysis(self, noise_levels: list[float] | None = None) -> dict[str, Any]:
+        """Sweep noise levels, evaluate all models, and export research figures."""
+        return run_sdk_sensitivity_analysis(self, noise_levels=noise_levels)
 
     def generate_report(self) -> str:
         """

@@ -174,20 +174,20 @@
     - [x] Write logic to iterate through the Test Set and generate predictions for all 3 models.
     - [x] Calculate final MSE, MAE, and Pearson Correlation for each architecture.
     - [x] Format the results into a clear summary table for the notebook and README.
-- [ ] **Sensitivity Analysis & Automated Visualizations**
+- [x] **Sensitivity Analysis & Automated Visualizations**
     - **DoD:** Graphs showing reconstruction quality vs. noise intensity (α, β) and training loss curves exported to the `assets/` directory.
-    - [ ] Create `src/utils/visuals.py` and implement `Visualizer` class.
-    - [ ] Row-Count Audit: Verify `visuals.py` is < 150 rows; split if necessary.
-    - [ ] Implement `plot_reconstruction()` to show side-by-side comparison of signals.
-    - [ ] Implement `plot_loss_curves()` for all models trained.
-    - [ ] Implement `sdk.run_sensitivity_analysis()` to sweep noise levels (0.1 to 0.9).
-    - [ ] Export all resulting graphs as high-resolution PNGs to the `assets/` directory.
-- [ ] **Verify Research Tools (TDD)**
+    - [x] Create `src/utils/visuals.py` and implement `Visualizer` class.
+    - [x] Row-Count Audit: Verify `visuals.py` is < 150 rows; split if necessary.
+    - [x] Implement `plot_reconstruction()` to show side-by-side comparison of signals.
+    - [x] Implement `plot_loss_curves()` for all models trained.
+    - [x] Implement `sdk.run_sensitivity_analysis()` to sweep noise levels (0.1 to 0.9).
+    - [x] Export all resulting graphs as high-resolution PNGs to the `assets/` directory.
+- [x] **Verify Research Tools (TDD)**
     - **DoD:** `tests/unit/` contains full coverage (>85%) for Phase 6 utility components.
-    - [ ] Create `tests/unit/test_visuals.py`.
-    - [ ] Row-Count Audit: Verify `test_visuals.py` is < 150 rows; split if necessary.
-    - [ ] Ensure plotting methods handle data without crashing.
-    - [ ] Verify that sensitive sweep logic correctly collects and returns metrics.
+    - [x] Create `tests/unit/test_visuals.py`.
+    - [x] Row-Count Audit: Verify `test_visuals.py` is < 150 rows; split if necessary.
+    - [x] Ensure plotting methods handle data without crashing.
+    - [x] Verify that sensitive sweep logic correctly collects and returns metrics.
 
 ## Phase 7: Final Documentation & Quality Polish
 - [ ] **Assemble Technical README.md**

@@ -36,8 +36,14 @@ def test_evaluate_on_test_set_returns_metrics_and_summary_table(monkeypatch):
     scales = {"FC": 1.0, "RNN": 0.5, "LSTM": 0.0}
     run_calls = []
 
-    def fake_run_training(model_type: str):
+    def fake_run_training(
+        model_type: str,
+        epochs: int = config.EPOCHS,
+        batch_size: int = config.BATCH_SIZE,
+    ):
         run_calls.append(model_type)
+        assert epochs == config.EPOCHS
+        assert batch_size == config.BATCH_SIZE
         sdk.trained_models[model_type] = DummyModel(scales[model_type])
         return {"model_type": model_type}
 
