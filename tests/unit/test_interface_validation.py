@@ -36,10 +36,12 @@ def test_prepare_data_validates_each_generated_input(monkeypatch):
     monkeypatch.setattr(interface_module, "SineWaveDatasetGenerator", FakeGenerator)
     monkeypatch.setattr(interface_module.np.random, "randint", fake_randint)
     monkeypatch.setattr(interface_module.config, "DATASET_SIZE", 3)
-    monkeypatch.setattr(interface_module.Gatekeeper, "validate_input_vector", fake_validate_input_vector)
+    monkeypatch.setattr(
+        interface_module.Gatekeeper, "validate_input_vector", fake_validate_input_vector
+    )
     monkeypatch.setattr(interface_module.Gatekeeper, "validate_input_batch", lambda batch: None)
 
-    SignalDenoiserSDK().prepare_data()
+    SignalDenoiserSDK().prepare_data(dataset_size=3)
 
     assert len(calls) == 3
     for recorded_input in calls:

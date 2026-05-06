@@ -11,7 +11,6 @@ from src.sdk.gatekeeper import Gatekeeper
 from src.sdk.sensitivity import run_sensitivity_analysis as run_sdk_sensitivity_analysis
 from src.training.trainer import ModelTrainer
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -84,7 +83,9 @@ class SignalDenoiserSDK:
             },
         }
 
-    def prepare_data(self, dataset_size: int = config.DATASET_SIZE) -> dict[str, dict[str, np.ndarray]]:
+    def prepare_data(
+        self, dataset_size: int = config.DATASET_SIZE
+    ) -> dict[str, dict[str, np.ndarray]]:
         """
         Generates signals and partitions the dataset (70/15/15).
         Implemented in Phase 3 & 5.

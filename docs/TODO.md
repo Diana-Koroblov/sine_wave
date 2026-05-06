@@ -205,15 +205,15 @@
     - [x] Row-Count Audit: Verify each PRD is < 150 rows; split if necessary.
     - [x] Create `docs/PROMPT_LOG.md`.
     - [x] Row-Count Audit: Verify `PROMPT_LOG.md` is < 150 rows; split if necessary.
-- [ ] **Global Versioning & Package Integrity**
+- [x] **Global Versioning & Package Integrity**
     - **DoD:** Version 1.00 established.
-    - [ ] Create `src/shared/version.py`.
-    - [ ] Row-Count Audit: Verify `version.py` is < 150 rows.
-    - [ ] Update `pyproject.toml` version.
-    - [ ] Verify `__init__.py` existence in all packages.
-- [ ] **Draft Cost & Resource Report**
+    - [x] Create `src/shared/version.py`.
+    - [x] Row-Count Audit: Verify `version.py` is < 150 rows.
+    - [x] Update `pyproject.toml` version.
+    - [x] Verify `__init__.py` existence in all packages.
+- [x] **Draft Cost & Resource Report**
     - **DoD:** Training time and memory reported.
-    - [ ] Extract metrics and format the "Resource Usage" table in the `README.md`.
+    - [x] Extract metrics and format the "Resource Usage" table in the `README.md`.
 - [ ] **Final Compliance Audit (Zero-Failure Gate)**
     - **DoD:** Standard compliance verified.
     - [ ] Run final `ruff check .` (Exactly 0 violations).

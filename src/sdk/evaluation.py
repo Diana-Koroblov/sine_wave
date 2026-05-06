@@ -5,7 +5,6 @@ from src.models.fc import FCModel
 from src.models.lstm import LSTMModel
 from src.models.rnn import RNNModel
 
-
 MODEL_BUILDERS = {
     "FC": FCModel,
     "RNN": RNNModel,
@@ -19,7 +18,9 @@ def create_model(model_type: str):
         return MODEL_BUILDERS[model_type]()
     except KeyError as error:
         supported = ", ".join(MODEL_BUILDERS)
-        raise ValueError(f"Unsupported model_type '{model_type}'. Expected one of: {supported}") from error
+        raise ValueError(
+            f"Unsupported model_type '{model_type}'. Expected one of: {supported}"
+        ) from error
 
 
 def _pearson_correlation(predictions: np.ndarray, targets: np.ndarray) -> float:

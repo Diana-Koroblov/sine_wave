@@ -1,6 +1,6 @@
 [project]
 name = "sine-waves-project"
-version = "0.1.0"
+version = "1.0.0"
 description = "Sine Wave Extraction and Signal De-noising using FC, RNN, and LSTM"
 readme = "README.md"
 requires-python = ">=3.13"

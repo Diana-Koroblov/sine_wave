@@ -136,6 +136,19 @@ LSTM reconstruction:
 
 ---
 
+## 💰 Resource Usage & Cost Report
+The following metrics were captured during the training phase (50 epochs, 60,000 samples) on a standard CPU environment:
+
+| Architecture | Training Time (Total) | Time per Epoch | Peak RAM |
+|--------------|----------------------:|---------------:|---------:|
+| **FC**       | ~22.8 s | 0.45 s | 291 MB |
+| **RNN**      | ~93.6 s | 1.87 s | 297 MB |
+| **LSTM**     | ~224.4 s | 4.48 s | 315 MB |
+
+> **Note:** Memory usage remains stable across architectures due to the shallow depth and fixed batch size. Recurrent architectures (RNN/LSTM) exhibit higher training times due to sequential state processing compared to the parallelizable nature of the Fully Connected layers.
+
+---
+
 ## 📂 Project Metadata
 *   **Version:** 1.00 (`src/shared/version.py`)
 *   **License:** MIT

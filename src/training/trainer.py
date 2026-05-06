@@ -1,5 +1,5 @@
-from copy import deepcopy
 import time
+from copy import deepcopy
 
 import numpy as np
 import psutil
@@ -45,7 +45,9 @@ class ModelTrainer:
 
         for start_index in range(0, len(indices), batch_size):
             batch_indices = indices[start_index : start_index + batch_size]
-            batch_inputs = torch.as_tensor(inputs[batch_indices], dtype=torch.float32, device=self.device)
+            batch_inputs = torch.as_tensor(
+                inputs[batch_indices], dtype=torch.float32, device=self.device
+            )
             batch_targets = torch.as_tensor(
                 targets[batch_indices],
                 dtype=torch.float32,

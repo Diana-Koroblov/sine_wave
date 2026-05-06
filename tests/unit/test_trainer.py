@@ -35,8 +35,14 @@ def test_fit_runs_validation_and_restores_best_weights(monkeypatch):
     model = torch.nn.Linear(config.INPUT_SIZE, config.OUTPUT_SIZE, bias=False)
     trainer = ModelTrainer(model)
     dataset_splits = {
-        "train": {"inputs": np.zeros((4, config.INPUT_SIZE), dtype=np.float32), "targets": np.zeros((4, config.OUTPUT_SIZE), dtype=np.float32)},
-        "validation": {"inputs": np.zeros((4, config.INPUT_SIZE), dtype=np.float32), "targets": np.zeros((4, config.OUTPUT_SIZE), dtype=np.float32)},
+        "train": {
+            "inputs": np.zeros((4, config.INPUT_SIZE), dtype=np.float32),
+            "targets": np.zeros((4, config.OUTPUT_SIZE), dtype=np.float32),
+        },
+        "validation": {
+            "inputs": np.zeros((4, config.INPUT_SIZE), dtype=np.float32),
+            "targets": np.zeros((4, config.OUTPUT_SIZE), dtype=np.float32),
+        },
     }
     validation_losses = iter([0.8, 0.2, 0.5])
     saved_states: dict[int, OrderedDict[str, torch.Tensor]] = {}
@@ -87,8 +93,14 @@ def test_trainer_resource_tracking(monkeypatch):
     model = torch.nn.Linear(config.INPUT_SIZE, config.OUTPUT_SIZE)
     trainer = ModelTrainer(model)
     dataset_splits = {
-        "train": {"inputs": np.zeros((4, config.INPUT_SIZE), dtype=np.float32), "targets": np.zeros((4, config.OUTPUT_SIZE), dtype=np.float32)},
-        "validation": {"inputs": np.zeros((4, config.INPUT_SIZE), dtype=np.float32), "targets": np.zeros((4, config.OUTPUT_SIZE), dtype=np.float32)},
+        "train": {
+            "inputs": np.zeros((4, config.INPUT_SIZE), dtype=np.float32),
+            "targets": np.zeros((4, config.OUTPUT_SIZE), dtype=np.float32),
+        },
+        "validation": {
+            "inputs": np.zeros((4, config.INPUT_SIZE), dtype=np.float32),
+            "targets": np.zeros((4, config.OUTPUT_SIZE), dtype=np.float32),
+        },
     }
     time_points = iter([10.0, 13.5])
     memory_points = iter([128.0, 140.0, 136.0])

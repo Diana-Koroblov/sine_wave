@@ -22,7 +22,8 @@ def _build_reconstruction_snapshot(
     noisy_signal = test_inputs[0, config.NUM_FREQUENCIES :]
     model = sdk.trained_models[best_model_type]
     with torch.no_grad():
-        reconstructed_signal = model(torch.as_tensor(test_inputs, dtype=torch.float32)).cpu().numpy()[0]
+        input_tensor = torch.as_tensor(test_inputs, dtype=torch.float32)
+        reconstructed_signal = model(input_tensor).cpu().numpy()[0]
     return {
         "model_type": best_model_type,
         "noise_level": noise_level,
