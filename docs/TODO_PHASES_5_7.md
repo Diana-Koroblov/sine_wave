@@ -1,0 +1,106 @@
+# Project Task Tracking: Phases 5-7
+
+## Phase 5: Training Pipeline & Dynamic Sampling
+- [x] **Implement Dataset Partitioning Logic**
+    - **DoD:** Implementation of a strict 70/15/15 split (Training, Validation, and Test sets) to evaluate model generalization.
+    - [x] Update `prepare_data()` logic in `src/sdk/interface.py`.
+    - [x] Row-Count Audit: Verify `interface.py` is < 150 rows; split if necessary.
+    - [x] Calculate split indices for the 60,000 examples (42,000 / 9,000 / 9,000).
+    - [x] Use `numpy.random.permutation` to shuffle indices before splitting to ensure unbiased sets.
+    - [x] Create a storage mechanism (e.g., dictionary or custom class) within the SDK to hold the partitioned arrays.
+    - **DoD:** Dataset generation engine yields exactly **60,000** random sample windows.
+    - [x] Implement the loop in the SDK that calls the `SineWaveDatasetGenerator` to build the full 60k dataset.
+    - [x] Verify that every single $X_{input}$ is shape (14,) and every $Y_{true}$ is shape (10,).
+- [x] **Implement Data Integrity & Validation Checks**
+    - **DoD:** Integration of `Gatekeeper` logic to verify that generated vectors match the required shapes and types before training.
+    - [x] Update `src/sdk/gatekeeper.py` if necessary for batch validation.
+    - [x] Row-Count Audit: Verify `gatekeeper.py` is < 150 rows; split if necessary.
+    - [x] Integrate a call to `Gatekeeper.validate_input_vector()` inside the dataset creation loop.
+    - [x] Add a try-except block to catch `ValueError` during data generation and log clear error messages.
+- [x] **Implement Dynamic Sampling Logic**
+    - **DoD:** Verified correct concatenation of the One-Hot vector $C$ (left) and the 10-sample window (right).
+    - [x] Implement the slicing logic to extract 10 samples from index $t$ to $t+10$.
+    - [x] Use `numpy.concatenate` to join the 4-bit OHE vector and the 10-bit signal window.
+    - [x] Verify that the OHE vector is always on the "left" (indices 0-3) of the resulting 14-element vector.
+- [x] **Implement Training Orchestrator**
+    - **DoD:** `src/training/trainer.py` handles the generic loop, backpropagation, and MSE calculation.
+    - [x] Create `src/training/trainer.py` and define the `ModelTrainer` class.
+    - [x] Row-Count Audit: Verify `trainer.py` is < 150 rows; split if necessary.
+    - [x] Implement the `train_epoch()` method using `torch.optim.Adam` and `torch.nn.MSELoss`.
+    - [x] Implement a validation step after each epoch to monitor loss on the 15% Validation set.
+    - [x] Add logic to save the best model weights based on validation loss.
+- [x] **Implement Performance & Resource Tracking**
+    - **DoD:** SDK logs training duration (via `time`) and peak memory usage (via `psutil`) for the performance report.
+    - [x] Record start time and initial memory before the training loop begins.
+    - [x] Capture `psutil.Process().memory_info().rss` at the end of each epoch to find the peak memory.
+    - [x] Return a dictionary containing `total_time` and `peak_ram_mb` to the SDK.
+- [x] **Apply TDD to the Training Orchestrator**
+    - **DoD:** Unit tests in `tests/unit/` verify the generic training loop, MSE calculation logic, and backpropagation flow using mock data.
+    - [x] Create `tests/unit/test_trainer.py`.
+    - [x] Row-Count Audit: Verify `test_trainer.py` is < 150 rows; split if necessary.
+    - [x] Write `test_trainer_loss_decreases` using a small dummy dataset to ensure the model is learning.
+    - [x] Write `test_trainer_resource_tracking` to verify that time and memory values are being recorded as non-zero.
+    - **DoD:** `tests/unit/` contains full coverage (>85%) for Phase 5 components.
+    - [x] Run `uv run pytest --cov=src/training` and confirm the 85% requirement is met.
+
+## Phase 6: Research, Visualization & Notebooks
+- [x] **Initialize and Integrate Research Notebook**
+    - **DoD:** `notebooks/analysis.ipynb` created, importing logic exclusively via the SDK layer.
+    - [x] Create `notebooks/analysis.ipynb`.
+    - [x] Row-Count Audit: Verify `analysis.ipynb` (as JSON) or logic is managed cleanly.
+    - [x] Add the boilerplate cell to resolve project imports (`sys.path.append`).
+    - [x] Import `SignalDenoiserSDK` and initialize it with `config.py`.
+    - [x] Demonstrate data generation and partitioning by calling `sdk.prepare_data()`.
+- [x] **Perform Model Evaluation on Test Set**
+    - **DoD:** Comparative metrics (MSE) reported specifically for the unseen Test Set to demonstrate true performance.
+    - [x] Update `src/sdk/interface.py` with `evaluate_on_test_set()`.
+    - [x] Row-Count Audit: Verify `interface.py` is < 150 rows; split if necessary.
+    - [x] Write logic to iterate through the Test Set and generate predictions for all 3 models.
+    - [x] Calculate final MSE, MAE, and Pearson Correlation for each architecture.
+    - [x] Format the results into a clear summary table for the notebook and README.
+- [x] **Sensitivity Analysis & Automated Visualizations**
+    - **DoD:** Graphs showing reconstruction quality vs. noise intensity (α, β) and training loss curves exported to the `assets/` directory.
+    - [x] Create `src/utils/visuals.py` and implement `Visualizer` class.
+    - [x] Row-Count Audit: Verify `visuals.py` is < 150 rows; split if necessary.
+    - [x] Implement `plot_reconstruction()` to show side-by-side comparison of signals.
+    - [x] Implement `plot_loss_curves()` for all models trained.
+    - [x] Implement `sdk.run_sensitivity_analysis()` to sweep noise levels (0.1 to 0.9).
+    - [x] Export all resulting graphs as high-resolution PNGs to the `assets/` directory.
+- [x] **Verify Research Tools (TDD)**
+    - **DoD:** `tests/unit/` contains full coverage (>85%) for Phase 6 utility components.
+    - [x] Create `tests/unit/test_visuals.py`.
+    - [x] Row-Count Audit: Verify `test_visuals.py` is < 150 rows; split if necessary.
+    - [x] Ensure plotting methods handle data without crashing.
+    - [x] Verify that sensitive sweep logic correctly collects and returns metrics.
+
+## Phase 7: Final Documentation & Quality Polish
+- [x] **Assemble Technical README.md**
+    - **DoD:** Comprehensive User Manual included.
+    - [x] Update `README.md` with Installation, Usage, and Configuration sections.
+    - [x] Row-Count Audit: Verify `README.md` is managed cleanly (use linked docs if > 150 lines).
+    - [x] Create the performance comparison table.
+    - [x] Insert the refined "Parameter Rationale & Engineering Choices" text.
+- [x] **Integrate Research Visualizations**
+    - **DoD:** README contains high-resolution plots.
+    - [x] Link PNG files and add technical captions to `README.md`.
+- [x] **Finalize Professional Documentation Suite**
+    - **DoD:** PRDs and Logs finalized.
+    - [x] Update `docs/PRD_RNN.md`, `docs/PRD_LSTM.md`, `docs/PRD_FC.md`.
+    - [x] Row-Count Audit: Verify each PRD is < 150 rows; split if necessary.
+    - [x] Create `docs/PROMPT_LOG.md`.
+    - [x] Row-Count Audit: Verify `PROMPT_LOG.md` is < 150 rows; split if necessary.
+- [x] **Global Versioning & Package Integrity**
+    - **DoD:** Version 1.00 established.
+    - [x] Create `src/shared/version.py`.
+    - [x] Row-Count Audit: Verify `version.py` is < 150 rows.
+    - [x] Update `pyproject.toml` version.
+    - [x] Verify `__init__.py` existence in all packages.
+- [x] **Draft Cost & Resource Report**
+    - **DoD:** Training time and memory reported.
+    - [x] Extract metrics and format the "Resource Usage" table in the `README.md`.
+- [x] **Final Compliance Audit (Zero-Failure Gate)**
+    - **DoD:** Standard compliance verified for maintained project files.
+    - [x] Run final `ruff check .` (Exactly 0 violations).
+    - [x] Run final `pytest --cov` (Minimum 85%).
+    - [x] Final Row-Count Audit: Verify NO authored project file exceeds 150 rows.
+    - [x] Documented the generated `uv.lock` exception separately from the authored-file audit.

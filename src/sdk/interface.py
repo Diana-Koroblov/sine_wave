@@ -6,6 +6,7 @@ import numpy as np
 import src.shared.config as config
 from src.data.generator import SineWaveDatasetGenerator
 from src.data.processor import to_one_hot
+from src.sdk.data_prep import split_dataset
 from src.sdk.evaluation import create_model, evaluate_model, format_metrics_table
 from src.sdk.gatekeeper import Gatekeeper
 from src.sdk.sensitivity import run_sensitivity_analysis as run_sdk_sensitivity_analysis
@@ -58,31 +59,6 @@ class SignalDenoiserSDK:
         class_vector = to_one_hot(target_index, config.NUM_FREQUENCIES)
         return np.concatenate([class_vector, noisy_window], dtype=np.float32)
 
-    def _split_dataset(
-        self, inputs: np.ndarray, targets: np.ndarray, dataset_size: int
-    ) -> dict[str, dict[str, np.ndarray]]:
-        permutation = np.random.permutation(dataset_size)
-        shuffled_inputs = inputs[permutation]
-        shuffled_targets = targets[permutation]
-
-        train_end = int(dataset_size * config.TRAIN_SPLIT)
-        validation_end = train_end + int(dataset_size * config.VAL_SPLIT)
-
-        return {
-            "train": {
-                "inputs": shuffled_inputs[:train_end],
-                "targets": shuffled_targets[:train_end],
-            },
-            "validation": {
-                "inputs": shuffled_inputs[train_end:validation_end],
-                "targets": shuffled_targets[train_end:validation_end],
-            },
-            "test": {
-                "inputs": shuffled_inputs[validation_end:],
-                "targets": shuffled_targets[validation_end:],
-            },
-        }
-
     def prepare_data(
         self, dataset_size: int = config.DATASET_SIZE
     ) -> dict[str, dict[str, np.ndarray]]:
@@ -114,7 +90,7 @@ class SignalDenoiserSDK:
             targets[example_index] = y_true
 
         Gatekeeper.validate_input_batch(inputs)
-        self.dataset_splits = self._split_dataset(inputs, targets, dataset_size)
+        self.dataset_splits = split_dataset(inputs, targets, dataset_size)
         return self.dataset_splits
 
     def run_training(
