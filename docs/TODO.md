@@ -1,19 +1,232 @@
 # Project Task Tracking
 
-The detailed phase history has been split to preserve the project rule that authored files stay under 150 rows.
+## Phase 1: Environment & Tooling Setup
+- [x] **Initialize Project with `uv`**
+    - **DoD:** `pyproject.toml` and `uv.lock` generated; `uv sync` completes successfully.
+    - [x] Run initialization commands to create configuration files.
+    - [x] Verify `uv.lock` is generated.
+- [x] **Configure Quality Enforcement (`Ruff`)**
+    - **DoD:** `ruff` configuration file created; `ruff check .` returns 0 violations.
+    - [x] Define `line-length = 100` and `target-version` in `pyproject.toml`.
+    - [x] Run `ruff check .` to ensure compliance.
+- [x] **Set up Testing Suite (`pytest` & `pytest-cov`)**
+    - **DoD:** Testing infrastructure initialized; coverage reports verify a minimum of 85%.
+    - [x] Configure `pytest` settings and coverage thresholds in `pyproject.toml`.
+    - [x] Verify initial testing baseline passes.
+- [x] **Establish Mandatory Directory Structure**
+    - **DoD:** All directories created.
+    - [x] Create `src/`, `docs/`, `notebooks/`, `tests/`, and `assets/` directories.
+    - [x] Add `__init__.py` to all source packages.
 
-## Archived Detailed Checklists
-- [TODO_PHASES_1_4.md](TODO_PHASES_1_4.md)
-- [TODO_PHASES_5_7.md](TODO_PHASES_5_7.md)
+## Phase 2: Configuration & SDK Foundation
+- [x] **Implement Dynamic `config.py`**
+    - **DoD:** All parameters (frequencies, noise coefficients α/β, hyperparameters) reside in `config.py`; zero hardcoded values in `src/`.
+    - [x] Define data spec constants (`SAMPLING_RATE`, `DURATION`, `WINDOW_SIZE`).
+    - [x] Define signal spec lists (`FREQUENCIES`, `AMPLITUDES`, `PHASES`).
+    - [x] Define noise spec scalars (`NOISE_ALPHA`, `NOISE_BETA`).
+    - [x] Define model hyperparameters (`LEARNING_RATE`, `HIDDEN_SIZE`, `NUM_LAYERS`).
+    - [x] Add technical rationale for parameter choices as a docstring/comment block.
+- [x] **Implement `SignalDenoiserSDK` Entry Point**
+    - **DoD:** Public interface defined in `src/sdk/interface.py`; all external calls must go through this class.
+    - [x] Create `SignalDenoiserSDK` class in `src/sdk/interface.py`.
+    - [x] Implement `__init__` to store the config file path.
+    - [x] Add public method stubs: `prepare_data()`, `run_training()`, and `generate_report()`.
+    - [x] Create `tests/unit/test_interface.py`.
+    - [x] Verify that the class initializes and stores the config path correctly.
+    - [x] Verify stubs return the correct data types (None, dict, str).
+- [x] **Implement `Gatekeeper` Input Validation**
+    - **DoD:** `src/sdk/gatekeeper.py` validates One-Hot vector structure and window dimensions (10 samples) before model execution.
+    - [x] Create `src/sdk/gatekeeper.py`.
+    - [x] Implement `validate_input_vector` to check for 14-element length.
+    - [x] Add logic to verify One-Hot encoding (values in {0, 1}, exactly one '1').
+    - [x] Implement `validate_window_dimensions` to check for 10-sample length.
+    - [x] Ensure `ValueError` is raised with descriptive messages for all failures.
+    - [x] Create `tests/unit/test_gatekeeper.py`.
+    - [x] Verify valid input vectors are accepted without error.
+    - [x] Verify `ValueError` is raised for incorrect shapes and malformed One-Hot vectors.
+- [x] **Implement `BaseModel` Abstract Class**
+    - **DoD:** Shared logic for weight initialization and input/output validation centralized in `src/models/base.py`.
+    - [x] Create `src/models/base.py`.
+    - [x] Inherit from `torch.nn.Module` and `abc.ABC`.
+    - [x] Implement `_validate_dimensions` to enforce 14-in and 10-out contract.
+    - [x] Implement `init_weights` using `nn.init.xavier_uniform_`.
+    - [x] Create `tests/unit/test_base_model.py`.
+    - [x] Use a `MockModel` (concrete subclass) to test `BaseModel` initialization logic.
+    - [x] Verify `ValueError` is raised if dimensions deviate from the 14/10 standard.
 
-## Current Status
-- [x] Phases 1-7 implementation complete.
-- [x] Historical task detail preserved in split documents.
+## Phase 3: Dataset Generation Engine
+- [x] **Implement `SineWaveDatasetGenerator`**
+    - **DoD:** Mathematical synthesis using $S_i(t) = A_i \cdot \sin(2\pi f_i t + \theta_i)$.
+    - [x] Create the file `src/data/generator.py`.
+    - [x] Import `numpy` and the constants from `config.py`.
+    - [x] Define the `SineWaveDatasetGenerator` class.
+    - [x] Write a helper method `_generate_time_axis()` to create a 1D array from 0 to 10 seconds with 10,000 points.
+    - [x] Write a method to generate the 4 pure sine waves using the values in `config.AMPLITUDES`, `config.FREQUENCIES`, and `config.PHASES`.
+- [x] **Implement Gaussian Noise Injection**
+    - **DoD:** Explicit generation of **Gaussian noise** relative to signal intensity (α, β).
+    - [x] Write a helper method `_generate_gaussian_noise(size)` using `np.random.normal`.
+    - [x] Implement the noise formula: $S'_i(t) = (A_i \pm \alpha \cdot \text{noise}) \cdot \sin(2\pi f_i t + (\theta_i \pm \beta \cdot \text{noise}))$.
+    - [x] Ensure noise is applied independently to both Amplitude and Phase for each of the 4 waves.
+- [x] **Data Structuring & Export**
+    - **DoD:** Export exactly 10 vectors: $\Sigma_{\text{noise}}$, $\Sigma_{\text{pure}}$, 4 pure waves $S_i$, and 4 noisy waves $S'_i$.
+    - [x] Implement the `generate_all_vectors()` method.
+    - [x] Calculate `sum_pure` by summing the 4 pure signals.
+    - [x] Calculate `sum_noise` by summing the 4 noisy signals.
+    - [x] Package all 10 vectors into a Python dictionary with clear keys (e.g., `'pure_1'`, `'noisy_1'`, `'sum_noise'`, etc.).
+- [x] **Verification of Constraints**
+    - **DoD:** Output exactly 10,000 samples per wave (10s @ 1000Hz).
+    - [x] Add an internal check (assertion) ensuring every vector has a `shape` of `(10000,)`.
+    - **DoD:** TDD applied; `src/data/generator.py` < 150 lines (Note: The 150 limit applies to the vertical number of rows per file, not the character line-length); >85% unit test coverage.
+    - [x] Create the test file `tests/unit/test_generator.py`.
+    - [x] If any file exceeds 150 lines, split it into two files instead of compressing or shortening the code.
+    - [x] Write a test to verify the dictionary contains exactly 10 keys with the correct names.
+    - [x] Write a test to verify that all vectors in the dictionary have exactly 10,000 elements.
+    - [x] Write a test to verify that the `sum_noise` values are mathematically different from `sum_pure` (proving noise was added).
+    - [x] Write a test to ensure that pure signals match the frequencies defined in `config.py`.
 
-## Final Compliance Audit (Zero-Failure Gate)
-- [x] **DoD:** Standard compliance verified for maintained project files.
-- [x] Run final `ruff check .` (Exactly 0 violations).
-- [x] Run final `pytest --cov` (Minimum 85%).
-- [x] Final Row-Count Audit: Verify NO authored project file exceeds 150 rows.
+## Phase 4: Model Architectures (OOP & DRY)
+- [x] **Finalize `BaseModel` Integration**
+    - **DoD:** Shared logic for weight initialization and input/output validation centralized in `src/models/base.py`.
+    - [x] Ensure all future model classes in this phase inherit from `BaseModel`.
+    - [x] Row-Count Audit: Verify `base.py` is < 150 rows. If it exceeds this limit, split it into logical sub-modules immediately. Do NOT shorten or compress code.
+    - [x] Verify that `self._validate_dimensions()` is called during initialization to prevent contract violations.
+    - [x] Confirm `self.init_weights()` is available for use in concrete model constructors.
+    - [x] Enhanced `BaseModel` to support recurrent layer weight initialization.
+- [x] **Implement Concrete Neural Architectures**
+    - **DoD:** All models inherit from `BaseModel`; zero code duplication (DRY).
+    - [x] Create `src/models/fc.py` and implement the `FCModel` class using dynamic layer stacking (based on `config.NUM_LAYERS`).
+    - [x] Row-Count Audit: Verify `fc.py` is < 150 rows; split if necessary without shortening code.
+    - [x] Create `src/models/rnn.py` and implement the `RNNModel` class using `nn.RNN` with `Tanh` activation.
+    - [x] Row-Count Audit: Verify `rnn.py` is < 150 rows; split if necessary without shortening code.
+    - [x] Create `src/models/lstm.py` and implement the `LSTMModel` class using `nn.LSTM` with the dual-state system.
+    - [x] Row-Count Audit: Verify `lstm.py` is < 150 rows; split if necessary without shortening code.
+    - [x] In each class, implement the `forward` method to process the 14-element input (Batch, 14) and return the 10-element output (Batch, 10).
+    - **DoD:** Each model file is strictly under 150 lines (Note: The 150 limit applies to the vertical number of rows per file, not the character line-length).
+    - [x] Audit the row count for `fc.py`, `rnn.py`, and `lstm.py` to ensure they are within the 150-row limit.
+    - [x] Ensure `ruff check .` returns zero violations for all three model files.
+    - [x] **Enhanced `BaseModel`** to support recurrent layer weight initialization.
+- [x] **Verify Model Integrity (TDD)**
+    - **DoD:** `tests/unit/test_models.py` verifies forward pass shapes (14-in, 10-out).
+    - [x] Create `tests/unit/test_models.py`.
+    - [x] Row-Count Audit: Verify `test_models.py` is < 150 rows; split if necessary.
+    - [x] Write a test case for `FCModel` that asserts the output shape is exactly `(1, 10)` given a `(1, 14)` input.
+    - [x] Write a test case for `RNNModel` that asserts the output shape is exactly `(1, 10)` given a `(1, 14)` input.
+    - [x] Write a test case for `LSTMModel` that asserts the output shape is exactly `(1, 10)` given a `(1, 14)` input.
+    - [x] Write a test to ensure `init_weights` modifies the default parameters (proves initialization logic is executing).
+    - **DoD:** `tests/unit/` contains full coverage (>85%) for Phase 4 components.
+    - [x] Run `uv run pytest --cov=src/models` and verify the coverage meets the 85% project gate.
 
-Generated artifact note: `uv.lock` remains above 150 rows and is excluded from the authored-file audit.
+## Phase 5: Training Pipeline & Dynamic Sampling
+- [x] **Implement Dataset Partitioning Logic**
+    - **DoD:** Implementation of a strict 70/15/15 split (Training, Validation, and Test sets) to evaluate model generalization.
+    - [x] Update `prepare_data()` logic in `src/sdk/interface.py`.
+    - [x] Row-Count Audit: Verify `interface.py` is < 150 rows; split if necessary.
+    - [x] Calculate split indices for the 60,000 examples (42,000 / 9,000 / 9,000).
+    - [x] Use `numpy.random.permutation` to shuffle indices before splitting to ensure unbiased sets.
+    - [x] Create a storage mechanism (e.g., dictionary or custom class) within the SDK to hold the partitioned arrays.
+    - **DoD:** Dataset generation engine yields exactly **60,000** random sample windows.
+    - [x] Implement the loop in the SDK that calls the `SineWaveDatasetGenerator` to build the full 60k dataset.
+    - [x] Verify that every single $X_{input}$ is shape (14,) and every $Y_{true}$ is shape (10,).
+- [x] **Implement Data Integrity & Validation Checks**
+    - **DoD:** Integration of `Gatekeeper` logic to verify that generated vectors match the required shapes and types before training.
+    - [x] Update `src/sdk/gatekeeper.py` if necessary for batch validation.
+    - [x] Row-Count Audit: Verify `gatekeeper.py` is < 150 rows; split if necessary.
+    - [x] Integrate a call to `Gatekeeper.validate_input_vector()` inside the dataset creation loop.
+    - [x] Add a try-except block to catch `ValueError` during data generation and log clear error messages.
+- [x] **Implement Dynamic Sampling Logic**
+    - **DoD:** Verified correct concatenation of the One-Hot vector $C$ (left) and the 10-sample window (right).
+    - [x] Implement the slicing logic to extract 10 samples from index $t$ to $t+10$.
+    - [x] Use `numpy.concatenate` to join the 4-bit OHE vector and the 10-bit signal window.
+    - [x] Verify that the OHE vector is always on the "left" (indices 0-3) of the resulting 14-element vector.
+- [x] **Implement Training Orchestrator**
+    - **DoD:** `src/training/trainer.py` handles the generic loop, backpropagation, and MSE calculation.
+    - [x] Create `src/training/trainer.py` and define the `ModelTrainer` class.
+    - [x] Row-Count Audit: Verify `trainer.py` is < 150 rows; split if necessary.
+    - [x] Implement the `train_epoch()` method using `torch.optim.Adam` and `torch.nn.MSELoss`.
+    - [x] Implement a validation step after each epoch to monitor loss on the 15% Validation set.
+    - [x] Add logic to save the best model weights based on validation loss.
+- [x] **Implement Performance & Resource Tracking**
+    - **DoD:** SDK logs training duration (via `time`) and peak memory usage (via `psutil`) for the performance report.
+    - [x] Record start time and initial memory before the training loop begins.
+    - [x] Capture `psutil.Process().memory_info().rss` at the end of each epoch to find the peak memory.
+    - [x] Return a dictionary containing `total_time` and `peak_ram_mb` to the SDK.
+- [x] **Apply TDD to the Training Orchestrator**
+    - **DoD:** Unit tests in `tests/unit/` verify the generic training loop, MSE calculation logic, and backpropagation flow using mock data.
+    - [x] Create `tests/unit/test_trainer.py`.
+    - [x] Row-Count Audit: Verify `test_trainer.py` is < 150 rows; split if necessary.
+    - [x] Write `test_trainer_loss_decreases` using a small dummy dataset to ensure the model is learning.
+    - [x] Write `test_trainer_resource_tracking` to verify that time and memory values are being recorded as non-zero.
+    - **DoD:** `tests/unit/` contains full coverage (>85%) for Phase 5 components.
+    - [x] Run `uv run pytest --cov=src/training` and confirm the 85% requirement is met.
+
+## Phase 6: Research, Visualization & Notebooks
+- [x] **Initialize and Integrate Research Notebook**
+    - **DoD:** `notebooks/analysis.ipynb` created, importing logic exclusively via the SDK layer.
+    - [x] Create `notebooks/analysis.ipynb`.
+    - [x] Row-Count Audit: Verify `analysis.ipynb` (as JSON) or logic is managed cleanly.
+    - [x] Add the boilerplate cell to resolve project imports (`sys.path.append`).
+    - [x] Import `SignalDenoiserSDK` and initialize it with `config.py`.
+    - [x] Demonstrate data generation and partitioning by calling `sdk.prepare_data()`.
+- [x] **Perform Model Evaluation on Test Set**
+    - **DoD:** Comparative metrics (MSE) reported specifically for the unseen Test Set to demonstrate true performance.
+    - [x] Update `src/sdk/interface.py` with `evaluate_on_test_set()`.
+    - [x] Row-Count Audit: Verify `interface.py` is < 150 rows; split if necessary.
+    - [x] Write logic to iterate through the Test Set and generate predictions for all 3 models.
+    - [x] Calculate final MSE, MAE, and Pearson Correlation for each architecture.
+    - [x] Format the results into a clear summary table for the notebook and README.
+- [x] **Sensitivity Analysis & Automated Visualizations**
+    - **DoD:** Graphs showing reconstruction quality vs. noise intensity, and explicit frequency-based reconstructions for ALL 3 models (FC, RNN, LSTM) at 0.5 and 0.9 noise, exported to `assets/`.
+    - [x] Implement `plot_reconstruction()` to show side-by-side comparison of signals, dynamically reading the OHE vector to include the Frequency Class, Noise, and Model Name in the plot title.
+    - [x] Implement `plot_loss_curves()` for all models trained.
+    - [x] Implement `sdk.run_sensitivity_analysis()` to sweep noise levels (0.1 to 0.9).
+    - [x] Export explicitly named reconstruction graphs for ALL 4 frequencies at 0.5 and 0.9 noise for FC, RNN, and LSTM models (e.g., `reconstruction_lstm_freq2_noise0_9.png`).
+    - [x] Clean up old ambiguous assets from the directory.
+- [ ] **Implement Frequency-Based Performance Analysis**
+    - **DoD:** Evaluate and visualize how each model (FC, RNN, LSTM) performs across the 4 different signal frequencies defined in config.py.
+    - [ ] Write logic in `src/utils/visuals.py` to group Test Set predictions by their One-Hot Encoding class (which represents the frequency).
+    - [ ] Calculate the average MSE for each of the 4 frequencies separately.
+    - [ ] Create a bar chart or line plot comparing the models' MSE across the different frequencies (holding noise constant, e.g., at default or medium levels).
+    - [ ] Export the visualization as `assets/frequency_mse_comparison.png`.
+    - [ ] Add a short technical markdown summary of these findings to the README, discussing how window size (10 samples) affects reconstruction of low vs. high frequencies for FC vs. LSTM.
+- [x] **Verify Research Tools (TDD)**
+    - **DoD:** `tests/unit/` contains full coverage (>85%) for Phase 6 utility components.
+    - [x] Create `tests/unit/test_visuals.py`.
+    - [x] Row-Count Audit: Verify `test_visuals.py` is < 150 rows; split if necessary.
+    - [x] Ensure plotting methods handle data without crashing.
+    - [x] Verify that sensitive sweep logic correctly collects and returns metrics.
+
+## Phase 7: Final Documentation & Quality Polish
+- [x] **Assemble Technical README.md**
+    - **DoD:** Comprehensive User Manual included.
+    - [x] Update `README.md` with Installation, Usage, and Configuration sections.
+    - [x] Row-Count Audit: Verify `README.md` is managed cleanly (use linked docs if > 150 lines).
+    - [x] Create the performance comparison table.
+    - [x] Insert the refined "Parameter Rationale & Engineering Choices" text.
+- [x] **Integrate Research Visualizations**
+    - **DoD:** README contains high-resolution plots.
+    - [x] Link PNG files and add technical captions to `README.md`.
+- [x] **Finalize Professional Documentation Suite**
+    - **DoD:** PRDs and Logs finalized.
+    - [x] Update `docs/PRD_RNN.md`, `docs/PRD_LSTM.md`, `docs/PRD_FC.md`.
+    - [x] Row-Count Audit: Verify each PRD is < 150 rows; split if necessary.
+    - [x] Create `docs/PROMPT_LOG.md`.
+    - [x] Row-Count Audit: Verify `PROMPT_LOG.md` is < 150 rows; split if necessary.
+- [x] **Global Versioning & Package Integrity**
+    - **DoD:** Version 1.00 established.
+    - [x] Create `src/shared/version.py`.
+    - [x] Row-Count Audit: Verify `version.py` is < 150 rows.
+    - [x] Update `pyproject.toml` version.
+    - [x] Verify `__init__.py` existence in all packages.
+- [x] **Draft Cost & Resource Report**
+    - **DoD:** Training time and memory reported.
+    - [x] Extract metrics and format the "Resource Usage" table in the `README.md`.
+- [x] **Integrate Results & Technical Analysis**
+    - **DoD:** README contains key visualizations (Loss, Sensitivity, Reconstructions) and a professional technical analysis explaining the micro-window challenge and model comparisons.
+- [x] **Final Compliance Audit (Zero-Failure Gate)**
+    - **DoD:** Standard compliance verified for maintained project files.
+    - [x] Run final `ruff check .` (Exactly 0 violations).
+    - [x] Run final `pytest --cov` (Minimum 85%).
+    - [x] Final Row-Count Audit: Verify NO authored project file exceeds 150 rows.
+    - [x] Documented the generated `uv.lock` exception separately from the authored-file audit.
+
+

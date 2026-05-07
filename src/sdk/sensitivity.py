@@ -1,3 +1,5 @@
+import logging
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -11,6 +13,7 @@ if TYPE_CHECKING:
 
 
 MODEL_TYPES = ("FC", "RNN", "LSTM")
+logger = logging.getLogger(__name__)
 
 
 def _build_reconstruction_snapshot(
@@ -19,7 +22,8 @@ def _build_reconstruction_snapshot(
     best_model_type = min(metrics, key=lambda model_type: metrics[model_type]["mse"])
     test_inputs = sdk.dataset_splits["test"]["inputs"][:1]
     pure_signal = sdk.dataset_splits["test"]["targets"][0]
-    noisy_signal = test_inputs[0, config.NUM_FREQUENCIES :]
+    # We now pass the FULL input vector including OHE
+    noisy_input = test_inputs[0]
     model = sdk.trained_models[best_model_type]
     with torch.no_grad():
         input_tensor = torch.as_tensor(test_inputs, dtype=torch.float32)
@@ -27,7 +31,7 @@ def _build_reconstruction_snapshot(
     return {
         "model_type": best_model_type,
         "noise_level": noise_level,
-        "noisy_signal": noisy_signal,
+        "noisy_input": noisy_input,
         "pure_signal": pure_signal,
         "reconstructed_signal": reconstructed_signal,
     }
@@ -43,6 +47,9 @@ def run_sensitivity_analysis(
     snapshot: dict[str, Any] | None = None
     original_alpha = config.NOISE_ALPHA
     original_beta = config.NOISE_BETA
+
+    # Track artifact paths
+    artifacts = {}
 
     try:
         for level in levels:
@@ -66,28 +73,57 @@ def run_sensitivity_analysis(
                 for model_type, training_run in sdk.training_runs.items()
             }
             snapshot = _build_reconstruction_snapshot(sdk, evaluation["metrics"], float(level))
+
+            # Special case: Robust visualizations at 0.5 and 0.9 noise for ALL frequencies
+            if level in (0.5, 0.9):
+                for model_type in MODEL_TYPES:
+                    model = sdk.trained_models[model_type]
+                    test_inputs = sdk.dataset_splits["test"]["inputs"]
+                    test_targets = sdk.dataset_splits["test"]["targets"]
+
+                    for freq_idx in range(config.NUM_FREQUENCIES):
+                        # Find the first example of this frequency class
+                        found_idx = -1
+                        for i, x_in in enumerate(test_inputs):
+                            if np.argmax(x_in[: config.NUM_FREQUENCIES]) == freq_idx:
+                                found_idx = i
+                                break
+
+                        if found_idx != -1:
+                            x_in = test_inputs[found_idx]
+                            y_true = test_targets[found_idx]
+                            with torch.no_grad():
+                                t_in = torch.as_tensor(x_in[None, :], dtype=torch.float32)
+                                y_pred = model(t_in).cpu().numpy()[0]
+
+                            n_str = str(level).replace(".", "_")
+                            fname = (
+                                f"reconstruction_{model_type.lower()}_"
+                                f"freq{freq_idx}_noise{n_str}.png"
+                            )
+                            visualizer.plot_reconstruction(
+                                x_in, y_true, y_pred, model_name=model_type, filename=fname
+                            )
+
+        # Cleanup old ambiguous assets
+        for old_file in ["reconstruction_fc_noise_0_9.png", "reconstruction_lstm_noise_0_9.png"]:
+            old_path = Path(config.ASSETS_PATH) / old_file
+            if old_path.exists():
+                old_path.unlink()
+                logger.info("Deleted ambiguous asset: %s", old_path)
+
     finally:
         config.NOISE_ALPHA = original_alpha
         config.NOISE_BETA = original_beta
 
-    artifacts = {
-        "sensitivity_mse": str(
-            visualizer.plot_sensitivity_curve(levels, metrics_by_model, metric="mse")
-        ),
-        "loss_curves": str(visualizer.plot_loss_curves(latest_histories)),
-    }
-    if snapshot is not None:
-        artifacts["reconstruction"] = str(
-            visualizer.plot_reconstruction(
-                snapshot["noisy_signal"],
-                snapshot["pure_signal"],
-                snapshot["reconstructed_signal"],
-                filename=(
-                    f"reconstruction_{snapshot['model_type'].lower()}_"
-                    f"noise_{str(snapshot['noise_level']).replace('.', '_')}.png"
-                ),
-            )
-        )
+    artifacts.update(
+        {
+            "sensitivity_mse": str(
+                visualizer.plot_sensitivity_curve(levels, metrics_by_model, metric="mse")
+            ),
+            "loss_curves": str(visualizer.plot_loss_curves(latest_histories)),
+        }
+    )
 
     return {
         "noise_levels": levels,

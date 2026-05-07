@@ -25,18 +25,36 @@ class Visualizer:
 
     def plot_reconstruction(
         self,
-        noisy_signal: np.ndarray,
+        noisy_input: np.ndarray,
         pure_signal: np.ndarray,
         reconstructed_signal: np.ndarray,
+        model_name: str,
         filename: str = "reconstruction.png",
     ) -> Path:
+        """Plot signal reconstruction comparison with explicit metadata."""
+        # Extract OHE from the first 4 elements of the input vector
+        ohe = noisy_input[:4]
+        freq_class = int(np.argmax(ohe))
+        noisy_signal = noisy_input[4:]
+
         figure, axes = plt.subplots(1, 2, figsize=(12, 4))
+
+        # Title formatting: Extract noise from filename or assume default
+        noise_val = "Unknown"
+        if "noise" in filename.lower():
+            # e.g., reconstruction_lstm_freq2_noise0_9.png -> 0_9 -> 0.9
+            noise_part = filename.split("noise")[-1].replace(".png", "")
+            noise_val = noise_part.replace("_", ".")
+
+        title_meta = f"Model: {model_name} | Noise: {noise_val} | Freq Class: {freq_class}"
+
         axes[0].plot(pure_signal, label="Pure", linewidth=2)
         axes[0].plot(noisy_signal, label="Noisy", alpha=0.8)
-        axes[0].set_title("Target vs Noisy")
+        axes[0].set_title(f"Target vs Noisy\n({title_meta})")
+
         axes[1].plot(pure_signal, label="Pure", linewidth=2)
         axes[1].plot(reconstructed_signal, label="Reconstructed", alpha=0.8)
-        axes[1].set_title("Target vs Reconstructed")
+        axes[1].set_title(f"Target vs Reconstructed\n({title_meta})")
         for axis in axes:
             axis.set_xlabel("Sample")
             axis.set_ylabel("Amplitude")

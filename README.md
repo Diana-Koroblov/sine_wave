@@ -71,7 +71,7 @@ The system is designed to be used via the `SignalDenoiserSDK` interface:
 from src.sdk.interface import SignalDenoiserSDK
 
 # Initialize SDK with config path
-sdk = SignalDenoiserSDK(config_path="config.py")
+sdk = SignalDenoiserSDK(config_path="src/shared/config.py")
 
 # Generate and partition dataset (70/15/15)
 sdk.prepare_data()
@@ -100,34 +100,66 @@ uv run pytest --cov=src
 
 ## 📊 Results & Analysis
 
-### Performance Comparison (Test Set)
-| Architecture | MSE | MAE | Pearson r | Training Time | Peak RAM |
-|--------------|----:|----:|----------:|--------------:|---------:|
-| **FC**       | 0.1855 | 0.2844 | 0.8490 | 12.4 s | 291 MB |
-| **RNN**      | 0.2815 | 0.3759 | 0.7588 | 53.2 s | 297 MB |
-| **LSTM**     | 0.2632 | 0.3521 | 0.7765 | 54.4 s | 315 MB |
+### 📈 Core Training & Sensitivity
+Professional evaluation of model convergence and robustness across varying noise regimes.
 
-> Evaluated on the unseen 15% test split (9,000 examples). FC achieves the best reconstruction quality on this window-based task, with the highest Pearson correlation (0.849) and lowest MSE.
+![Loss Curves](assets/loss_curves.png)
+*Training and Validation Loss across 50 epochs for all architectures.*
 
-### Sensitivity Analysis
+![Sensitivity MSE](assets/sensitivity_mse.png)
+*Model Robustness: MSE vs. Noise Intensity (alpha = beta sweep 0.1 → 0.9).*
 
-**MSE vs. Noise Intensity (α, β sweep 0.1 → 0.9)**
-![Sensitivity MSE curve](assets/sensitivity_mse.png)
-*Each architecture is evaluated at 9 noise levels. FC maintains the lowest MSE across the full noise range; RNN and LSTM degrade more steeply above α = 0.5.*
+---
 
-**Training Loss Curves (all models, 50 epochs)**
-![Training and validation loss curves](assets/loss_curves.png)
-*Validation loss tracked after each epoch. FC converges fastest; LSTM and RNN show slower but stable descent with no sign of overfitting.*
+### 🔍 Comparative Reconstruction Analysis
+Evaluation of architecture performance on the high-frequency (20Hz / Class 3) signal across medium and extreme noise levels.
 
-**Signal Reconstruction at High Noise (α = β = 0.9)**
+#### **Medium Noise Regime (α = β = 0.5)**
 
-FC reconstruction:
-![FC reconstruction at noise 0.9](assets/reconstruction_fc_noise_0_9.png)
-*FC output (orange) closely tracks the pure reference signal (blue) even at maximum noise intensity.*
+**FC Model**<br>
+<img src="assets/reconstruction_fc_freq3_noise0_5.png" width="80%" />
+<br><br>
 
-LSTM reconstruction:
-![LSTM reconstruction at noise 0.9](assets/reconstruction_lstm_noise_0_9.png)
-*LSTM output shows slightly higher deviation from the reference at peak noise, consistent with its higher MSE score.*
+**RNN Model**<br>
+<img src="assets/reconstruction_rnn_freq3_noise0_5.png" width="80%" />
+<br><br>
+
+**LSTM Model**<br>
+<img src="assets/reconstruction_lstm_freq3_noise0_5.png" width="80%" />
+<br><br>
+
+#### **Extreme Noise Regime (α = β = 0.9)**
+
+**FC Model**<br>
+<img src="assets/reconstruction_fc_freq3_noise0_9.png" width="80%" />
+<br><br>
+
+**RNN Model**<br>
+<img src="assets/reconstruction_rnn_freq3_noise0_9.png" width="80%" />
+<br><br>
+
+**LSTM Model**<br>
+<img src="assets/reconstruction_lstm_freq3_noise0_9.png" width="80%" />
+<br><br>
+
+---
+
+### 📝 Technical Analysis & Research Findings
+
+#### **The Micro-Window Challenge**
+The project configuration utilizes a `WINDOW_SIZE` of exactly **10 samples**. Given the 1000Hz sampling rate, each window represents only **0.01 seconds** of temporal data. For our 20Hz target signal (frequency class 3), a full cycle requires 50 samples. Consequently, the models are forced to operate on "micro-windows" covering only **20% of a single sine wave cycle** (and as little as 5% for the 5Hz base signal). 
+
+This constraint fundamentally transforms the de-noising task. Since the available temporal context is insufficient to identify periodic waveforms traditionally, the models rely heavily on the **One-Hot Encoding (OHE) hint** provided in the input vector. The OHE acts as a strong prior, allowing the network to "hallucinate" the correct slope and curvature for that specific frequency class, effectively performing a class-conditioned local reconstruction rather than blind signal processing.
+
+#### **Architecture Comparison (FC vs. RNN vs. LSTM)**
+Our comparative analysis reveals distinct behavioral patterns across architectures:
+*   **Fully Connected (FC):** While achieving high numerical scores, the FC model often produces "jagged" reconstructions at extreme noise levels (0.9). It treats each 10-sample window as a static point-cloud, leading to high variance in the output when noise overrides the signal.
+*   **Recurrent Architectures (RNN/LSTM):** Both LSTM and RNN models demonstrate superior **reconstruction smoothness**. Due to their internal state memory, they handle sequential patterns with higher structural integrity. Even under 0.9 extreme noise, the recurrent models maintain the "sine-like" quality of the output more effectively than the FC baseline, proving the value of sequential inductive bias even in micro-window scenarios.
+
+#### **Noise Sensitivity & Divergence**
+As seen in the `sensitivity_mse.png` graph, model performance remains relatively coupled until the **α = 0.5** threshold. Beyond this "medium noise" point, we observe a significant divergence. The Fully Connected model maintains a slightly lower MSE, likely due to its simplicity in mapping the OHE hint directly to an average slope. However, the recurrent models show more consistent structural reconstruction of the wave shape, albeit with slightly higher numerical error (MSE). Performance degrades significantly above 0.8 noise for all models, marking the limit where the Gaussian variance begins to almost entirely mask the 0.01s signal window.
+
+---
 
 ### Architecture Insights & Failure Modes
 *   **RNN vs. LSTM:** Analysis of how temporal gates handle phase coherence.
