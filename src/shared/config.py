@@ -11,7 +11,7 @@ TOTAL_SAMPLES = SAMPLING_RATE * DURATION  # 10,000 samples
 
 WINDOW_SIZE = 10  # Number of samples per input sequence
 NUM_FREQUENCIES = 4  # Number of base sine waves
-FREQUENCIES = [5, 10, 15, 20]  # Frequencies in Hz
+FREQUENCIES = [25, 50, 100, 150]  # Frequencies in Hz
 
 # Distinct parameters for each wave to enhance signal realism
 AMPLITUDES = [1.0, 1.2, 0.8, 1.5]
@@ -63,4 +63,4 @@ OUTPUT_SIZE = WINDOW_SIZE
 
 # --- File Paths ---
 MODEL_SAVE_PATH = "models/"
-ASSETS_PATH = "assets/"
+ASSETS_PATH = "assets/v2_high_freq/"

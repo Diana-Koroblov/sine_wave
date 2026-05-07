@@ -100,71 +100,104 @@ uv run pytest --cov=src
 
 ## 📊 Results & Analysis
 
-### 📈 Core Training & Sensitivity
-Professional evaluation of model convergence and robustness across varying noise regimes.
+### 🧪 Experiment A: Low Frequency Baseline (5-20Hz)
+Professional evaluation of model convergence and robustness in the original frequency regime.
 
-![Loss Curves](assets/loss_curves.png)
-*Training and Validation Loss across 50 epochs for all architectures.*
+<p align="center">
+  <img src="assets/v1_low_freq/loss_curves.png" width="45%" />
+  <img src="assets/v1_low_freq/sensitivity_mse.png" width="45%" />
+</p>
 
-![Sensitivity MSE](assets/sensitivity_mse.png)
-*Model Robustness: MSE vs. Noise Intensity (alpha = beta sweep 0.1 → 0.9).*
+**Analysis of Convergence:** In the 5-20Hz regime, all models (FC, RNN, LSTM) converge rapidly. This is due to the relatively low-complexity task of mapping a 10-sample "micro-slope" to a target value. Since the signal remains largely linear within the 0.01s window, the optimization surface is smooth, allowing for stable gradient descent.
+
+**Noise Sensitivity Analysis:** The MSE remains relatively stable at low noise levels but increases as Gaussian variance begins to obscure the subtle gradient of the low-frequency signal. Because the signal change is minimal within the small window, even moderate noise results in a challenging signal-to-noise ratio (SNR), leading to the "jagged" reconstruction artifacts observed in the FC model.
 
 ---
 
-### 🔍 Comparative Reconstruction Analysis
-Evaluation of architecture performance on the high-frequency (20Hz / Class 3) signal across medium and extreme noise levels.
+#### **🔍 Intelligent Result Selection (Experiment A)**
 
-#### **Medium Noise Regime (α = β = 0.5)**
+**The Micro-Window Challenge: Linear Hallucination (5Hz @ 0.5 Medium Noise)**
+At 5Hz, a full cycle requires 200 samples. In our 10-sample window, the signal is essentially a straight line. The model cannot "see" the wave; it simply estimates a slope based on the One-Hot hint.
 
-**FC Model**<br>
-<img src="assets/reconstruction_fc_freq3_noise0_5.png" width="80%" />
+**FC Model (Freq Class 0)**<br>
+<img src="assets/v1_low_freq/reconstruction_fc_freq0_noise0_5.png" width="80%" />
 <br><br>
 
-**RNN Model**<br>
-<img src="assets/reconstruction_rnn_freq3_noise0_5.png" width="80%" />
+**Information-Poor Reconstruction (5Hz @ 0.9 Extreme Noise)**
+Under extreme noise, the 5Hz signal is nearly invisible. The reconstruction is "aliasing-free" but information-poor, as the 0.01s window contains no identifiable periodic features, forcing the LSTM to rely entirely on the OHE prior.
+
+**LSTM Model (Freq Class 0)**<br>
+<img src="assets/v1_low_freq/reconstruction_lstm_freq0_noise0_9.png" width="80%" />
 <br><br>
 
-**LSTM Model**<br>
-<img src="assets/reconstruction_lstm_freq3_noise0_5.png" width="80%" />
-<br><br>
+**Maximum Complexity Case (20Hz @ 0.9 Extreme Noise)**
+At the top of the baseline range (20Hz), we see the beginning of curvature within the window. The RNN struggles to maintain phase coherence, producing a slightly "jittery" reconstruction compared to the smoother LSTM output.
 
-#### **Extreme Noise Regime (α = β = 0.9)**
-
-**FC Model**<br>
-<img src="assets/reconstruction_fc_freq3_noise0_9.png" width="80%" />
-<br><br>
-
-**RNN Model**<br>
-<img src="assets/reconstruction_rnn_freq3_noise0_9.png" width="80%" />
-<br><br>
-
-**LSTM Model**<br>
-<img src="assets/reconstruction_lstm_freq3_noise0_9.png" width="80%" />
+**RNN Model (Freq Class 3)**<br>
+<img src="assets/v1_low_freq/reconstruction_rnn_freq3_noise0_9.png" width="80%" />
 <br><br>
 
 ---
 
-### 📝 Technical Analysis & Research Findings
+### 🧪 Experiment B: High Frequency Optimization (25-150Hz)
+Increasing frequencies allowed the models to capture full cyclic patterns within the fixed 10-sample window. This transition from "micro-segments" to "feature-rich windows" demonstrates the superior sequential pattern recognition of gated architectures.
 
-#### **The Micro-Window Challenge**
-The project configuration utilizes a `WINDOW_SIZE` of exactly **10 samples**. Given the 1000Hz sampling rate, each window represents only **0.01 seconds** of temporal data. For our 20Hz target signal (frequency class 3), a full cycle requires 50 samples. Consequently, the models are forced to operate on "micro-windows" covering only **20% of a single sine wave cycle** (and as little as 5% for the 5Hz base signal). 
+<p align="center">
+  <img src="assets/v2_high_freq/loss_curves.png" width="45%" />
+  <img src="assets/v2_high_freq/sensitivity_mse.png" width="45%" />
+</p>
 
-This constraint fundamentally transforms the de-noising task. Since the available temporal context is insufficient to identify periodic waveforms traditionally, the models rely heavily on the **One-Hot Encoding (OHE) hint** provided in the input vector. The OHE acts as a strong prior, allowing the network to "hallucinate" the correct slope and curvature for that specific frequency class, effectively performing a class-conditioned local reconstruction rather than blind signal processing.
+**Complex Feature Learning:** The Loss Curves in this regime demonstrate a more complex convergence pattern compared to Experiment A. The models must learn to reconstruct full cyclic shapes (100-150Hz) rather than simple linear trends. This requirement for higher-order feature extraction is reflected in the more gradual descent of the validation loss, indicating that the network is capturing structural periodic dependencies.
 
-#### **Architecture Comparison (FC vs. RNN vs. LSTM)**
-Our comparative analysis reveals distinct behavioral patterns across architectures:
-*   **Fully Connected (FC):** While achieving high numerical scores, the FC model often produces "jagged" reconstructions at extreme noise levels (0.9). It treats each 10-sample window as a static point-cloud, leading to high variance in the output when noise overrides the signal.
-*   **Recurrent Architectures (RNN/LSTM):** Both LSTM and RNN models demonstrate superior **reconstruction smoothness**. Due to their internal state memory, they handle sequential patterns with higher structural integrity. Even under 0.9 extreme noise, the recurrent models maintain the "sine-like" quality of the output more effectively than the FC baseline, proving the value of sequential inductive bias even in micro-window scenarios.
-
-#### **Noise Sensitivity & Divergence**
-As seen in the `sensitivity_mse.png` graph, model performance remains relatively coupled until the **α = 0.5** threshold. Beyond this "medium noise" point, we observe a significant divergence. The Fully Connected model maintains a slightly lower MSE, likely due to its simplicity in mapping the OHE hint directly to an average slope. However, the recurrent models show more consistent structural reconstruction of the wave shape, albeit with slightly higher numerical error (MSE). Performance degrades significantly above 0.8 noise for all models, marking the limit where the Gaussian variance begins to almost entirely mask the 0.01s signal window.
+**Robustness at Scale:** The sensitivity analysis reveals that despite the increased signal complexity, the LSTM demonstrates superior robustness. By utilizing the temporal dependencies of the full sine wave cycle visible within the window, the LSTM effectively "filters" the Gaussian noise, maintaining structural integrity where the FC model suffers from high variance and structural breakdown.
 
 ---
 
-### Architecture Insights & Failure Modes
-*   **RNN vs. LSTM:** Analysis of how temporal gates handle phase coherence.
-*   **FC Baseline:** Evaluation of static window processing without sequential context.
-*   **Failure Analysis:** Detailed report on performance degradation in extreme noise scenarios (>80%).
+#### **🔍 Intelligent Result Selection (Experiment B)**
+
+**The Success Story: Cyclic Pattern Recognition (100Hz @ 0.9 Extreme Noise)**
+In this extreme noise scenario, the Fully Connected model fails to maintain structural integrity, resulting in high variance. In contrast, the LSTM's gated memory allows it to "lock" onto the 100Hz cycle (exactly 1 full cycle in 10 samples), producing a smooth, mathematically plausible reconstruction despite the noise floor.
+
+**FC Model (Freq Class 2)**<br>
+<img src="assets/v2_high_freq/reconstruction_fc_freq2_noise0_9.png" width="80%" />
+<br>
+
+**LSTM Model (Freq Class 2)**<br>
+<img src="assets/v2_high_freq/reconstruction_lstm_freq2_noise0_9.png" width="80%" />
+<br><br>
+
+**Complexity Case: High-Frequency Stability (150Hz @ 0.5 Medium Noise)**
+At 150Hz, the 10-sample window captures **1.5 full cycles**. The LSTM architecture handles this increased complexity with high precision, accurately tracking the rapid oscillations where the RNN baseline begins to show slight phase lag/instability.
+
+**RNN Model (Freq Class 3)**<br>
+<img src="assets/v2_high_freq/reconstruction_rnn_freq3_noise0_5.png" width="80%" />
+<br>
+
+**LSTM Model (Freq Class 3)**<br>
+<img src="assets/v2_high_freq/reconstruction_lstm_freq3_noise0_5.png" width="80%" />
+<br><br>
+
+**The Failure Point: Noise Saturation (150Hz @ 0.9 Extreme Noise)**
+At 150Hz under 0.9 noise, we reach the physical limits of the current architecture. The rapid frequency combined with extreme variance makes it difficult for even the LSTM to maintain amplitude accuracy, though it still manages to preserve the correct frequency timing—a feat the FC model cannot replicate.
+
+**LSTM Model (Freq Class 3)**<br>
+<img src="assets/v2_high_freq/reconstruction_lstm_freq3_noise0_9.png" width="80%" />
+<br><br>
+
+---
+
+### 📝 Final Comparative Discussion & Conclusions
+
+#### **Performance under Different Frequencies**
+The experimental results highlight a clear shift in model efficacy across frequency regimes. While **Experiment A (Low Frequency)** proved the basic feasibility of the architectures, **Experiment B (High Frequency)** acted as the definitive **"stress test"** for the system. In the baseline regime, the performance differences between models were subtle.
+ Because the signal windows were nearly linear, the task was reduced to simple slope estimation, which the **Fully Connected (FC)** model handled with surprising efficiency. However, in **Experiment B (High Frequency)**, the task became one of periodic feature extraction. As the signal moved towards 100-150Hz, capturing full cycles within the window, the recurrent models—specifically the **LSTM**—became significantly more robust.
+
+#### **Architectural Behavior & Sequential Bias**
+The primary differentiator discovered was the models' ability to handle structural noise. While the FC model often achieved low numerical MSE by "averaging" noise points, it produced physically unrealistic, "jagged" waveforms. The **LSTM**, leveraging its gated memory, demonstrated a superior **sequential inductive bias**. It maintained "sine-like" smoothness even when noise variance exceeded signal amplitude, effectively using its internal state to filter out point-wise Gaussian spikes in favor of the underlying temporal pattern.
+
+#### **The Preferred Model: Research Recommendation**
+*   **Low-Frequency/Slow-Sampling (5-20Hz):** The **Fully Connected** model is preferred for its computational simplicity and rapid training time, as the 0.01s window provides insufficient sequential information to justify recurrent complexity.
+*   **High-Frequency/Feature-Rich (25-150Hz):** The **LSTM** is mandatory. Its ability to reconstruct complex, full-cyclic waveforms under extreme noise (0.9) far exceeds the baseline, providing the only reconstruction that maintains both frequency and structural integrity.
 
 ---
 

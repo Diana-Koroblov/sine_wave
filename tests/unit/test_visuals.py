@@ -13,9 +13,15 @@ from src.utils.visuals import Visualizer
 def test_visualizer_exports_reconstruction_and_loss_curves(tmp_path: Path):
     """Verify plotting helpers save non-empty PNG files without crashing."""
     visualizer = Visualizer(tmp_path)
-    signal = np.linspace(0.0, 1.0, config.WINDOW_SIZE, dtype=np.float32)
+    # Input vector: 4 elements for OHE + WINDOW_SIZE samples
+    noisy_input = np.zeros(config.INPUT_SIZE, dtype=np.float32)
+    noisy_input[0] = 1.0  # Freq Class 0
+    pure_signal = np.linspace(0.0, 1.0, config.WINDOW_SIZE, dtype=np.float32)
+    reconstructed_signal = pure_signal + 0.05
 
-    reconstruction_path = visualizer.plot_reconstruction(signal + 0.2, signal, signal + 0.05)
+    reconstruction_path = visualizer.plot_reconstruction(
+        noisy_input, pure_signal, reconstructed_signal, model_name="FC"
+    )
     loss_curves_path = visualizer.plot_loss_curves(
         {"FC": {"train_losses": [0.8, 0.5], "validation_losses": [0.9, 0.6]}}
     )
@@ -95,6 +101,8 @@ def test_run_sensitivity_analysis_collects_metrics_and_exports_graphs(monkeypatc
     monkeypatch.setattr(sdk, "evaluate_on_test_set", fake_evaluate_on_test_set)
     monkeypatch.setattr(sensitivity_module.config, "ASSETS_PATH", str(tmp_path))
 
+    # Note: Using 0.1 and 0.4 ensures we don't trigger the 0.5/0.9 robust visualization logic,
+    # keeping the test focused on the standard artifact dictionary structure.
     result = sdk.run_sensitivity_analysis(noise_levels=[0.1, 0.4])
 
     assert prepared_levels == [(0.1, 0.1), (0.4, 0.4)]
@@ -102,6 +110,5 @@ def test_run_sensitivity_analysis_collects_metrics_and_exports_graphs(monkeypatc
     assert len(result["metrics"]["FC"]) == 2
     assert Path(result["artifacts"]["sensitivity_mse"]).exists()
     assert Path(result["artifacts"]["loss_curves"]).exists()
-    assert Path(result["artifacts"]["reconstruction"]).exists()
     assert config.NOISE_ALPHA == pytest.approx(original_alpha)
     assert config.NOISE_BETA == pytest.approx(original_beta)

@@ -181,13 +181,13 @@
     - [x] Implement `sdk.run_sensitivity_analysis()` to sweep noise levels (0.1 to 0.9).
     - [x] Export explicitly named reconstruction graphs for ALL 4 frequencies at 0.5 and 0.9 noise for FC, RNN, and LSTM models (e.g., `reconstruction_lstm_freq2_noise0_9.png`).
     - [x] Clean up old ambiguous assets from the directory.
-- [ ] **Implement Frequency-Based Performance Analysis**
+- [x] **Implement Frequency-Based Performance Analysis**
     - **DoD:** Evaluate and visualize how each model (FC, RNN, LSTM) performs across the 4 different signal frequencies defined in config.py.
-    - [ ] Write logic in `src/utils/visuals.py` to group Test Set predictions by their One-Hot Encoding class (which represents the frequency).
-    - [ ] Calculate the average MSE for each of the 4 frequencies separately.
-    - [ ] Create a bar chart or line plot comparing the models' MSE across the different frequencies (holding noise constant, e.g., at default or medium levels).
-    - [ ] Export the visualization as `assets/frequency_mse_comparison.png`.
-    - [ ] Add a short technical markdown summary of these findings to the README, discussing how window size (10 samples) affects reconstruction of low vs. high frequencies for FC vs. LSTM.
+    - [x] Write logic in `src/utils/visuals.py` to group Test Set predictions by their One-Hot Encoding class (which represents the frequency).
+    - [x] Calculate the average MSE for each of the 4 frequencies separately.
+    - [x] Create a bar chart or line plot comparing the models' MSE across the different frequencies (holding noise constant, e.g., at default or medium levels).
+    - [x] Export the visualization as `assets/frequency_mse_comparison.png`.
+    - [x] Add a short technical markdown summary of these findings to the README, discussing how window size (10 samples) affects reconstruction of low vs. high frequencies for FC vs. LSTM.
 - [x] **Verify Research Tools (TDD)**
     - **DoD:** `tests/unit/` contains full coverage (>85%) for Phase 6 utility components.
     - [x] Create `tests/unit/test_visuals.py`.
@@ -222,11 +222,19 @@
     - [x] Extract metrics and format the "Resource Usage" table in the `README.md`.
 - [x] **Integrate Results & Technical Analysis**
     - **DoD:** README contains key visualizations (Loss, Sensitivity, Reconstructions) and a professional technical analysis explaining the micro-window challenge and model comparisons.
+
+## Phase 8: High-Frequency Experimental Comparison
+- [x] **Comparative Research: High-Frequency Optimization**
+    - **DoD:** Experiment B results generated and documented in README, comparing 5-20Hz vs. 25-150Hz performance.
+    - [x] Backup Experiment A (Low Freq) assets to `assets/v1_low_freq/`.
+    - [x] Update `config.py` to High-Freq (25-150Hz).
+    - [x] Re-train all models (FC, RNN, LSTM) and generate new reconstruction plots.
+    - [x] Export new visualizations to `assets/v2_high_freq/`.
+    - [x] Update README with Experiment B analysis and vertical image stacking.
+
 - [x] **Final Compliance Audit (Zero-Failure Gate)**
     - **DoD:** Standard compliance verified for maintained project files.
     - [x] Run final `ruff check .` (Exactly 0 violations).
     - [x] Run final `pytest --cov` (Minimum 85%).
-    - [x] Final Row-Count Audit: Verify NO authored project file exceeds 150 rows.
+    - [x] Final Row-Count Audit: Verify NO authored project file exceeds 150 lines.
     - [x] Documented the generated `uv.lock` exception separately from the authored-file audit.
-
-

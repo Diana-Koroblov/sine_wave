@@ -44,7 +44,6 @@ def run_sensitivity_analysis(
     visualizer = Visualizer(config.ASSETS_PATH)
     metrics_by_model = {model_type: [] for model_type in MODEL_TYPES}
     latest_histories: dict[str, dict[str, list[float]]] = {}
-    snapshot: dict[str, Any] | None = None
     original_alpha = config.NOISE_ALPHA
     original_beta = config.NOISE_BETA
 
@@ -72,7 +71,7 @@ def run_sensitivity_analysis(
                 }
                 for model_type, training_run in sdk.training_runs.items()
             }
-            snapshot = _build_reconstruction_snapshot(sdk, evaluation["metrics"], float(level))
+            _build_reconstruction_snapshot(sdk, evaluation["metrics"], float(level))
 
             # Special case: Robust visualizations at 0.5 and 0.9 noise for ALL frequencies
             if level in (0.5, 0.9):
