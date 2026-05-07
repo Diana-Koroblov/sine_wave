@@ -11,7 +11,6 @@ import src.shared.config as config
 
 class ModelTrainer:
     """Generic trainer for denoising models with train and validation loops."""
-
     def __init__(
         self,
         model: nn.Module,
@@ -95,7 +94,6 @@ class ModelTrainer:
         self.model.eval()
         total_loss = 0.0
         total_samples = 0
-
         for batch_inputs, batch_targets in self._iter_batches(
             validation_inputs,
             validation_targets,
@@ -104,11 +102,9 @@ class ModelTrainer:
         ):
             predictions = self.model(batch_inputs)
             loss = self.criterion(predictions, batch_targets)
-
             batch_size_actual = batch_inputs.shape[0]
             total_loss += loss.item() * batch_size_actual
             total_samples += batch_size_actual
-
         return total_loss / total_samples
 
     def fit(
@@ -122,7 +118,6 @@ class ModelTrainer:
         validation_losses: list[float] = []
         start_time = time.perf_counter()
         peak_ram_mb = self._current_ram_mb()
-
         for epoch_index in range(epochs):
             train_loss = self.train_epoch(
                 dataset_splits["train"]["inputs"],
@@ -137,17 +132,13 @@ class ModelTrainer:
             train_losses.append(train_loss)
             validation_losses.append(validation_loss)
             peak_ram_mb = max(peak_ram_mb, self._current_ram_mb())
-
             if validation_loss < self.best_validation_loss:
                 self.best_validation_loss = validation_loss
                 self.best_model_state = deepcopy(self.model.state_dict())
                 self.best_epoch = epoch_index + 1
-
         if self.best_model_state is not None:
             self.model.load_state_dict(self.best_model_state)
-
         total_time = time.perf_counter() - start_time
-
         return {
             "train_losses": train_losses,
             "validation_losses": validation_losses,

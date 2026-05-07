@@ -13,8 +13,6 @@ from src.sdk.sensitivity import run_sensitivity_analysis as run_sdk_sensitivity_
 from src.training.trainer import ModelTrainer
 
 logger = logging.getLogger(__name__)
-
-
 class SignalDenoiserSDK:
     """
     Public Entry Point for the Signal De-noising System.
@@ -110,7 +108,6 @@ class SignalDenoiserSDK:
         model = create_model(normalized_model_type)
         if not self.dataset_splits:
             self.prepare_data()
-
         trainer = ModelTrainer(model)
         training_result = trainer.fit(self.dataset_splits, epochs=epochs, batch_size=batch_size)
         self.trained_models[normalized_model_type] = trainer.model
@@ -141,11 +138,9 @@ class SignalDenoiserSDK:
             "metrics": metrics_by_model,
             "summary_table": format_metrics_table(metrics_by_model),
         }
-
     def run_sensitivity_analysis(self, noise_levels: list[float] | None = None) -> dict[str, Any]:
         """Sweep noise levels, evaluate all models, and export research figures."""
         return run_sdk_sensitivity_analysis(self, noise_levels=noise_levels)
-
     def generate_report(self) -> str:
         """
         Analyzes results and generates a performance report.
