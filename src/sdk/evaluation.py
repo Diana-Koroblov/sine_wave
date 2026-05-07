@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 
+import src.shared.config as config
 from src.models.fc import FCModel
 from src.models.lstm import LSTMModel
 from src.models.rnn import RNNModel
@@ -45,6 +46,23 @@ def evaluate_model(model, inputs: np.ndarray, targets: np.ndarray) -> dict[str, 
         "mae": float(np.mean(np.abs(error))),
         "pearson_correlation": _pearson_correlation(predictions, targets),
     }
+
+
+@torch.no_grad()
+def evaluate_frequency_mse(model, inputs: np.ndarray, targets: np.ndarray) -> list[float]:
+    """Compute average MSE for each known frequency class on the test split."""
+    model.eval()
+    predictions = model(torch.as_tensor(inputs, dtype=torch.float32)).detach().cpu().numpy()
+    class_indices = np.argmax(inputs[:, : config.NUM_FREQUENCIES], axis=1)
+    mse_values: list[float] = []
+    for freq_index in range(config.NUM_FREQUENCIES):
+        mask = class_indices == freq_index
+        if not np.any(mask):
+            mse_values.append(float("nan"))
+            continue
+        error = predictions[mask] - targets[mask]
+        mse_values.append(float(np.mean(np.square(error))))
+    return mse_values
 
 
 def format_metrics_table(metrics_by_model: dict[str, dict[str, float]]) -> str:

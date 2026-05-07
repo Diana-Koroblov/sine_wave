@@ -8,9 +8,9 @@ from src.training.trainer import ModelTrainer
 
 
 def make_dataset(size: int = 32) -> tuple[np.ndarray, np.ndarray]:
-    """Create a simple learnable mapping from 14 features to 10 outputs."""
+    """Create a simple learnable mapping from sigma-annotated inputs to clean windows."""
     inputs = np.random.default_rng(0).normal(size=(size, config.INPUT_SIZE)).astype(np.float32)
-    targets = inputs[:, config.NUM_FREQUENCIES :].copy()
+    targets = inputs[:, config.SIGNAL_START_INDEX :].copy()
     return inputs, targets
 
 

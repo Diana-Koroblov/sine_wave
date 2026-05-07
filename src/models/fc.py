@@ -8,7 +8,7 @@ from src.models.base import BaseModel
 class FCModel(BaseModel):
     """
     Fully Connected (Dense) model for signal denoising.
-    Treats the 14-element input as a static vector, leveraging the
+    Treats the sigma-annotated input vector as a static feature map, leveraging the
     Universal Approximation Theorem to map noisy input to pure signals.
     """
 
@@ -16,7 +16,7 @@ class FCModel(BaseModel):
         """
         Initialize the FC model with dynamic layer stacking.
         Args:
-            input_size: Dimension of the input vector (OHE + window).
+            input_size: Dimension of the input vector (OHE + sigma + window).
             output_size: Dimension of the output window.
         """
         super().__init__(input_size, output_size)
@@ -42,7 +42,7 @@ class FCModel(BaseModel):
         """
         Forward pass for the FC model.
         Args:
-            x: Input tensor of shape (Batch, 14).
+            x: Input tensor of shape (Batch, INPUT_SIZE).
         Returns:
             torch.Tensor: Denoised output of shape (Batch, 10).
         """

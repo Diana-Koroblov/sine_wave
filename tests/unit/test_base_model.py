@@ -1,6 +1,7 @@
 import pytest
 import torch
 
+import src.shared.config as config
 from src.models.base import BaseModel
 
 
@@ -13,18 +14,18 @@ class MockModel(BaseModel):
 
 def test_base_model_initialization():
     """Verify correct initialization of BaseModel dimensions."""
-    model = MockModel(input_size=14, output_size=10)
-    assert model.input_size == 14
-    assert model.output_size == 10
+    model = MockModel(input_size=config.INPUT_SIZE, output_size=config.OUTPUT_SIZE)
+    assert model.input_size == config.INPUT_SIZE
+    assert model.output_size == config.OUTPUT_SIZE
 
 
 def test_base_model_invalid_dimensions():
     """Verify that BaseModel raises ValueError for incorrect dimensions."""
-    with pytest.raises(ValueError, match="Expected input_size 14"):
-        MockModel(input_size=13, output_size=10)
+    with pytest.raises(ValueError, match=f"Expected input_size {config.INPUT_SIZE}"):
+        MockModel(input_size=config.INPUT_SIZE - 1, output_size=config.OUTPUT_SIZE)
 
-    with pytest.raises(ValueError, match="Expected output_size 10"):
-        MockModel(input_size=14, output_size=9)
+    with pytest.raises(ValueError, match=f"Expected output_size {config.OUTPUT_SIZE}"):
+        MockModel(input_size=config.INPUT_SIZE, output_size=config.OUTPUT_SIZE - 1)
 
 
 def test_base_model_forward_coverage():
@@ -34,9 +35,9 @@ def test_base_model_forward_coverage():
         def forward(self, x: torch.Tensor) -> torch.Tensor:
             return super().forward(x)
 
-    model = CoverageMock(input_size=14, output_size=10)
+    model = CoverageMock(input_size=config.INPUT_SIZE, output_size=config.OUTPUT_SIZE)
     # This will return None because of 'pass' in parent
-    assert model.forward(torch.zeros((1, 14))) is None
+    assert model.forward(torch.zeros((1, config.INPUT_SIZE))) is None
 
 
 def test_base_model_weight_init():
@@ -47,6 +48,6 @@ def test_base_model_weight_init():
             super().__init__(input_size, output_size)
             self.fc = torch.nn.Linear(input_size, output_size)
 
-    model = LinearMock(input_size=14, output_size=10)
+    model = LinearMock(input_size=config.INPUT_SIZE, output_size=config.OUTPUT_SIZE)
     model.init_weights()
     assert isinstance(model.fc.weight, torch.Tensor)

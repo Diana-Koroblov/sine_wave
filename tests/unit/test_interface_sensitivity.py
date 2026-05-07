@@ -10,7 +10,10 @@ def test_prepare_data_accepts_runtime_dataset_size(monkeypatch):
     monkeypatch.setattr(config, "DATASET_SIZE", 60000)
     monkeypatch.setattr(config, "TOTAL_SAMPLES", 100)
     monkeypatch.setattr(config, "WINDOW_SIZE", 10)
-    monkeypatch.setattr(config, "INPUT_SIZE", 14)
+    monkeypatch.setattr(config, "SIGMA_FEATURES", 1)
+    monkeypatch.setattr(config, "SIGMA_INDEX", 4)
+    monkeypatch.setattr(config, "SIGNAL_START_INDEX", 5)
+    monkeypatch.setattr(config, "INPUT_SIZE", 15)
     monkeypatch.setattr(config, "OUTPUT_SIZE", 10)
     monkeypatch.setattr(config, "NUM_FREQUENCIES", 4)
 

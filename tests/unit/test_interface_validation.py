@@ -49,7 +49,7 @@ def test_prepare_data_validates_each_generated_input(monkeypatch):
 
 
 def test_build_training_example_places_ohe_on_left_and_window_on_right():
-    """Verify dynamic sampling uses OHE indices 0-3 and the sampled window at indices 4-13."""
+    """Verify inputs use OHE, sigma, then the selected noisy window in that order."""
 
     sdk = SignalDenoiserSDK()
     vectors = {
@@ -61,12 +61,19 @@ def test_build_training_example_places_ohe_on_left_and_window_on_right():
             config.TOTAL_SAMPLES,
             dtype=np.float32,
         ) + (index + 1) * 1000
-        vectors[f"noisy_{index + 1}"] = np.zeros(config.TOTAL_SAMPLES, dtype=np.float32)
+        vectors[f"noisy_{index + 1}"] = np.arange(
+            config.TOTAL_SAMPLES,
+            dtype=np.float32,
+        ) + (index + 1) * 100
 
     x_input, y_true = sdk._build_training_example(vectors, target_index=2, start_index=5)
 
     np.testing.assert_array_equal(x_input[: config.NUM_FREQUENCIES], np.array([0, 0, 1, 0]))
-    np.testing.assert_allclose(x_input[config.NUM_FREQUENCIES :], vectors["sum_noise"][5:15])
+    assert x_input[config.SIGMA_INDEX] == pytest.approx(config.NOISE_ALPHA)
+    np.testing.assert_allclose(
+        x_input[config.SIGNAL_START_INDEX :],
+        vectors["noisy_3"][5:15],
+    )
     np.testing.assert_allclose(y_true, vectors["pure_3"][5:15])
 
 

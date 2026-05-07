@@ -9,7 +9,7 @@ from src.models.rnn import RNNModel
 
 
 def make_valid_input() -> torch.Tensor:
-    return torch.tensor([[1.0, 0.0, 0.0, 0.0] + [0.25] * 10], dtype=torch.float32)
+    return torch.tensor([[1.0, 0.0, 0.0, 0.0, 0.1] + [0.25] * 10], dtype=torch.float32)
 
 
 @pytest.mark.parametrize("model_cls", [FCModel, RNNModel, LSTMModel])
@@ -34,7 +34,7 @@ def test_model_forward_output_shape(model_cls) -> None:
         (
             RNNModel,
             lambda: nn.RNN(
-                input_size=5,
+                input_size=6,
                 hidden_size=config.HIDDEN_SIZE,
                 num_layers=config.NUM_LAYERS,
                 batch_first=True,
@@ -45,7 +45,7 @@ def test_model_forward_output_shape(model_cls) -> None:
         (
             LSTMModel,
             lambda: nn.LSTM(
-                input_size=5,
+                input_size=6,
                 hidden_size=config.HIDDEN_SIZE,
                 num_layers=config.NUM_LAYERS,
                 batch_first=True,

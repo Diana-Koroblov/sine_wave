@@ -94,7 +94,7 @@ def test_generator_error_handling():
 def test_noise_application_integrity():
     """
     Verify noisy signal accounts for both amplitude and phase noise components.
-    Formula: S'_i(t) = (A_i + alpha * noise) * sin(2*pi * f_i * t + (theta_i + beta * noise))
+    Formula: S'_i(t) = (A_i * (1 + alpha * noise)) * sin(2*pi * f_i * t + theta_i + beta * noise)
     """
     gen = SineWaveDatasetGenerator()
     # Mock noise to return constant 1.0
@@ -106,7 +106,7 @@ def test_noise_application_integrity():
 
         for i in range(4):
             # Manual calculation
-            expected_amp = config.AMPLITUDES[i] + config.NOISE_ALPHA
+            expected_amp = config.AMPLITUDES[i] * (1.0 + config.NOISE_ALPHA)
             expected_phase = config.PHASES[i] + config.NOISE_BETA
             expected_wave = expected_amp * np.sin(
                 2 * np.pi * config.FREQUENCIES[i] * t + expected_phase

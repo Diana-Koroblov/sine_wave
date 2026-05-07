@@ -13,9 +13,10 @@ from src.utils.visuals import Visualizer
 def test_visualizer_exports_reconstruction_and_loss_curves(tmp_path: Path):
     """Verify plotting helpers save non-empty PNG files without crashing."""
     visualizer = Visualizer(tmp_path)
-    # Input vector: 4 elements for OHE + WINDOW_SIZE samples
+    # Input vector: 4 elements for OHE + 1 sigma + WINDOW_SIZE samples
     noisy_input = np.zeros(config.INPUT_SIZE, dtype=np.float32)
     noisy_input[0] = 1.0  # Freq Class 0
+    noisy_input[config.SIGMA_INDEX] = config.NOISE_ALPHA
     pure_signal = np.linspace(0.0, 1.0, config.WINDOW_SIZE, dtype=np.float32)
     reconstructed_signal = pure_signal + 0.05
 
@@ -49,9 +50,22 @@ def test_visualizer_exports_sensitivity_curve(tmp_path: Path):
     assert output_path.stat().st_size > 0
 
 
+def test_visualizer_exports_frequency_mse_comparison(tmp_path: Path):
+    """Verify the per-frequency MSE comparison chart is exported successfully."""
+    visualizer = Visualizer(tmp_path)
+
+    output_path = visualizer.plot_frequency_mse_comparison(
+        config.FREQUENCIES,
+        {"FC": [0.1, 0.2, 0.3, 0.4], "LSTM": [0.08, 0.18, 0.2, 0.25]},
+    )
+
+    assert output_path.exists()
+    assert output_path.stat().st_size > 0
+
+
 class EchoWindowModel(torch.nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return x[:, config.NUM_FREQUENCIES :]
+        return x[:, config.SIGNAL_START_INDEX :]
 
 
 def test_run_sensitivity_analysis_collects_metrics_and_exports_graphs(monkeypatch, tmp_path: Path):
@@ -70,7 +84,13 @@ def test_run_sensitivity_analysis_collects_metrics_and_exports_graphs(monkeypatc
         prepared_levels.append((config.NOISE_ALPHA, config.NOISE_BETA))
         assert dataset_size == config.SENSITIVITY_DATASET_SIZE
         test_inputs = np.tile(
-            np.concatenate([np.array([1.0, 0.0, 0.0, 0.0], dtype=np.float32), base_window]),
+            np.concatenate(
+                [
+                    np.array([1.0, 0.0, 0.0, 0.0], dtype=np.float32),
+                    np.array([config.NOISE_ALPHA], dtype=np.float32),
+                    base_window,
+                ]
+            ),
             (2, 1),
         )
         sdk.dataset_splits = {
@@ -80,9 +100,14 @@ def test_run_sensitivity_analysis_collects_metrics_and_exports_graphs(monkeypatc
         }
         return sdk.dataset_splits
 
-    def fake_evaluate_on_test_set(epochs=config.EPOCHS, batch_size=config.BATCH_SIZE):
+    def fake_evaluate_on_test_set(
+        epochs=config.EPOCHS,
+        batch_size=config.BATCH_SIZE,
+        export_artifacts=True,
+    ):
         assert epochs == config.SENSITIVITY_EPOCHS
         assert batch_size == config.SENSITIVITY_BATCH_SIZE
+        assert export_artifacts is False
         for model_type in ("FC", "RNN", "LSTM"):
             sdk.trained_models[model_type] = EchoWindowModel()
             sdk.training_runs[model_type] = {

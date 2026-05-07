@@ -19,9 +19,9 @@ The LSTM regulates information flow via three specialized gates:
 
 ## 3. Technical Specifications
 ### 3.1 Dimensions & Flow
-*   **Input Vector:** 14 elements (4-bit One-Hot context $C$ + 10 samples from $\Sigma_{\text{noise}}$).
+*   **Input Vector:** 15 elements (4-bit One-Hot context $C$ + 1 sigma feature + 10 noisy samples).
 *   **Output Vector:** 10 elements (Predicted pure sine wave window).
-*   **Internal Mapping:** The 10 samples are processed as a temporal sequence of 10 steps, each receiving the static One-Hot context.
+*   **Internal Mapping:** The 10 samples are processed as a temporal sequence of 10 steps, each receiving the static One-Hot context and sigma feature.
 
 ### 3.2 Activation Functions
 *   **Gate Activations:** Mandatory use of **Sigmoid** to produce gating values between 0 (completely blocked) and 1 (completely open).

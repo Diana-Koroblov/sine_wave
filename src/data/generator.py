@@ -59,7 +59,8 @@ class SineWaveDatasetGenerator:
     def _create_noisy_waves(self) -> list[np.ndarray]:
         """
         Generates the 4 noisy sine waves (S'_i) using the Gaussian formula.
-        Formula: S'_i(t) = (A_i + alpha * noise) * sin(2*pi * f_i * t + (theta_i + beta * noise))
+        Formula:
+            S'_i(t) = (A_i * (1 + alpha * noise)) * sin(2*pi * f_i * t + theta_i + beta * noise)
         Returns:
             list[np.ndarray]: List of 4 noisy arrays, each containing 10,000 samples.
         """
@@ -79,8 +80,8 @@ class SineWaveDatasetGenerator:
             noise_amp = self._generate_gaussian_noise(self.total_samples)
             noise_phase = self._generate_gaussian_noise(self.total_samples)
 
-            # Apply formula: (A_i + alpha * noise) * sin(2*pi*f_i*t + theta_i + beta * noise)
-            noisy_amp = amp + (alpha * noise_amp)
+            # Apply sigma as a percentage of amplitude to match the homework contract.
+            noisy_amp = amp * (1.0 + (alpha * noise_amp))
             noisy_phase = phase + (beta * noise_phase)
 
             wave = noisy_amp * np.sin(2 * np.pi * freq * t + noisy_phase)

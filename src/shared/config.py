@@ -23,6 +23,8 @@ PHASES = [0.0, 0.5, 1.0, 1.5]  # In radians
 NOISE_ALPHA = 0.1  # Amplitude noise intensity
 NOISE_BETA = 0.1  # Phase noise intensity
 NOISE_DISTRIBUTION = "gaussian"  # Type of noise ('gaussian' or 'uniform')
+SIGMA_MIN = 0.0
+SIGMA_MAX = 1.0
 
 """
 --- RATIONALE FOR PARAMETER CHOICES (For README.md) ---
@@ -56,8 +58,11 @@ SENSITIVITY_EPOCHS = 12
 HIDDEN_SIZE = 64  # Number of units in hidden layers
 NUM_LAYERS = 2  # Number of layers for RNN/LSTM/FC
 
-# Input size: 4 (One-Hot) + WINDOW_SIZE (10) = 14
-INPUT_SIZE = NUM_FREQUENCIES + WINDOW_SIZE
+# Input size: 4 (One-Hot) + 1 (sigma) + WINDOW_SIZE (10) = 15
+SIGMA_FEATURES = 1
+SIGMA_INDEX = NUM_FREQUENCIES
+SIGNAL_START_INDEX = NUM_FREQUENCIES + SIGMA_FEATURES
+INPUT_SIZE = NUM_FREQUENCIES + SIGMA_FEATURES + WINDOW_SIZE
 # Output size: WINDOW_SIZE (10)
 OUTPUT_SIZE = WINDOW_SIZE
 

@@ -21,12 +21,13 @@ class LSTMModel(BaseModel):
         """
         super().__init__(input_size, output_size)
         self.context_size = config.NUM_FREQUENCIES
+        self.sigma_size = config.SIGMA_FEATURES
         self.window_size = config.WINDOW_SIZE
 
-        # Input per time step: 4 (OHE context) + 1 (Signal sample) = 5
+        # Input per time step: 4 (OHE context) + 1 (sigma) + 1 (Signal sample) = 6
         # Uses triple-gate logic and dual-state system (Hidden and Cell states)
         self.lstm = nn.LSTM(
-            input_size=self.context_size + 1,
+            input_size=self.context_size + self.sigma_size + 1,
             hidden_size=config.HIDDEN_SIZE,
             num_layers=config.NUM_LAYERS,
             batch_first=True,
@@ -42,20 +43,22 @@ class LSTMModel(BaseModel):
         """
         Forward pass for the LSTM model.
         Args:
-            x: Input tensor of shape (Batch, 14).
+            x: Input tensor of shape (Batch, INPUT_SIZE).
         Returns:
             torch.Tensor: Denoised output of shape (Batch, 10).
         """
-        # Feature extraction: context (4) and noisy signal (10)
+        # Feature extraction: context (4), sigma (1), and noisy signal (10)
         ohe = x[:, : self.context_size]  # (Batch, context_size)
-        signal = x[:, self.context_size :]  # (Batch, window_size)
+        sigma = x[:, self.context_size : config.SIGNAL_START_INDEX]  # (Batch, 1)
+        signal = x[:, config.SIGNAL_START_INDEX :]  # (Batch, window_size)
 
         # Sequence preparation
         signal = signal.unsqueeze(-1)  # (Batch, 10, 1)
         ohe_expanded = ohe.unsqueeze(1).expand(-1, self.window_size, -1)
+        sigma_expanded = sigma.unsqueeze(1).expand(-1, self.window_size, -1)
 
-        # Input formation for the Gradient Highway: (Batch, 10, 5)
-        lstm_input = torch.cat([ohe_expanded, signal], dim=-1)
+        # Input formation for the Gradient Highway: (Batch, 10, 6)
+        lstm_input = torch.cat([ohe_expanded, sigma_expanded, signal], dim=-1)
 
         # Gated execution
         out, _ = self.lstm(lstm_input)  # out: (Batch, 10, hidden_size)

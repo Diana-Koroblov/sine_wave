@@ -16,7 +16,7 @@ class BaseModel(ABC, nn.Module):
         """
         Initialize the base model.
         Args:
-            input_size: Dimension of the input vector (default 14).
+            input_size: Dimension of the input vector (default INPUT_SIZE).
             output_size: Dimension of the output window (default 10).
         """
         super().__init__()

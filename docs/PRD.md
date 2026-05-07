@@ -59,7 +59,7 @@ The `docs/` directory must contain the following mandatory files:
 #### 3.1.2 Noise Formulation
 *   **Noisy Signal Definition:** $S'_i(t) = (A_i \pm \alpha \cdot \text{noise}) \cdot \sin(2\pi f_i t + (\theta_i \pm \beta \cdot \text{noise}))$.
 *   **Noise Intensity:** $\alpha$ and $\beta$ represent percentage relative to the signal.
-*   **Phase Noise Range:** Strictly in the range $[0, 2\pi]$.
+*   **Practical Encoding:** The current implementation exposes the shared noise percentage to the models as a scalar sigma feature.
 *   **Distribution:** Noise must strictly follow a **Gaussian** distribution (Parameter Justification).
 
 #### 3.1.3 Sampling & Duration
@@ -79,7 +79,7 @@ The generator MUST export exactly 10 vectors:
 *   A randomly generated One-Hot Encoded vector of length 4 (e.g., `[0, 1, 0, 0]` to target $S_2$).
 
 #### 3.2.2 Input ($X_{\text{input}}$)
-*   **Format:** Concatenation of the One-Hot vector $C$ on the **left**, and a dynamically sampled window of exactly 10 consecutive samples from the combined noisy signal ($\Sigma_{\text{noise}}$) on the **right**.
+*   **Format:** Concatenation of the One-Hot vector $C$ on the **left**, a scalar sigma percentage in the middle, and a dynamically sampled window of exactly 10 consecutive samples from the selected noisy wave $S'_i$ on the **right**.
 *   **Window Size:** Exactly 10 samples.
 
 #### 3.2.3 Target Output ($Y_{\text{true}}$)

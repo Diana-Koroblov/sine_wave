@@ -35,7 +35,7 @@ To respect the **150-line file limit** (Note: The 150 limit applies to the verti
 
 ### ADR 2: OOP & Module Decoupling (DRY)
 *   **Decision:** Use an abstract `BaseModel` class inheriting from `torch.nn.Module`.
-*   **Rationale:** RNN, LSTM, and FC architectures share identical input/output requirements (14-in, 10-out). A base class centralizes weight initialization and common forward-pass validation, preventing code duplication across the three model files.
+*   **Rationale:** RNN, LSTM, and FC architectures share identical input/output requirements (configured input size, 10-out). A base class centralizes weight initialization and common forward-pass validation, preventing code duplication across the three model files.
 
 ### ADR 3: Configuration Management
 *   **Decision:** Use a centralized `Config` object initialized from a Python-based configuration file.
@@ -77,7 +77,7 @@ class SignalDenoiserSDK:
 class BaseModel(ABC, torch.nn.Module):
     @abstractmethod
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Input: (Batch, 14), Output: (Batch, 10)"""
+    """Input: (Batch, INPUT_SIZE), Output: (Batch, 10)"""
         pass
 ```
 
@@ -93,8 +93,9 @@ class BaseModel(ABC, torch.nn.Module):
     *   **Sampling Logic:** For each example:
         *   Select random index $t \in [0, 9990]$. (Rationale: Since the total generated signal contains 10,000 samples and the extraction window requires 10 consecutive samples, $t$ cannot exceed 9,990 to prevent index out-of-bounds errors).
         *   Select target wave $i \in \{1,2,3,4\}$ and generate its One-Hot vector $C$.
-        *   Extract a 10-sample window from $\Sigma_{\text{noise}}$ spanning indices $[t, t+10)$.
-        *   Concatenate $C$ (left) + Window (right) to form $X_{\text{input}}$.
+        *   Resolve the shared noise percentage $\sigma$ from the configured noise level.
+        *   Extract a 10-sample window from the selected noisy wave $S'_i$ spanning indices $[t, t+10)$.
+        *   Concatenate $C$ (left) + $\sigma$ + Window (right) to form $X_{\text{input}}$.
         *   **Gatekeeping:** `Gatekeeper` validates $X_{\text{input}}$ dimensions and values.
         *   Extract the corresponding 10-sample window from pure signal $S_i$ spanning $[t, t+10)$ as $Y_{\text{true}}$.
     *   **Partitioning Strategy:** The 60,000 examples are split using a strict **70/15/15** ratio:

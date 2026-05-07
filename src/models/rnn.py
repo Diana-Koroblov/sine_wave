@@ -21,11 +21,12 @@ class RNNModel(BaseModel):
         """
         super().__init__(input_size, output_size)
         self.context_size = config.NUM_FREQUENCIES
+        self.sigma_size = config.SIGMA_FEATURES
         self.window_size = config.WINDOW_SIZE
 
-        # Input per time step: 4 (OHE context) + 1 (Signal sample) = 5
+        # Input per time step: 4 (OHE context) + 1 (sigma) + 1 (Signal sample) = 6
         self.rnn = nn.RNN(
-            input_size=self.context_size + 1,
+            input_size=self.context_size + self.sigma_size + 1,
             hidden_size=config.HIDDEN_SIZE,
             num_layers=config.NUM_LAYERS,
             batch_first=True,
@@ -42,22 +43,24 @@ class RNNModel(BaseModel):
         """
         Forward pass for the RNN model.
         Args:
-            x: Input tensor of shape (Batch, 14).
+            x: Input tensor of shape (Batch, INPUT_SIZE).
         Returns:
             torch.Tensor: Denoised output of shape (Batch, 10).
         """
-        # Split input into One-Hot context and Signal window
+        # Split input into One-Hot context, sigma, and signal window.
         ohe = x[:, : self.context_size]  # (Batch, context_size)
-        signal = x[:, self.context_size :]  # (Batch, window_size)
+        sigma = x[:, self.context_size : config.SIGNAL_START_INDEX]  # (Batch, 1)
+        signal = x[:, config.SIGNAL_START_INDEX :]  # (Batch, window_size)
 
         # Reshape signal to sequence format: (Batch, 10, 1)
         signal = signal.unsqueeze(-1)
 
         # Expand context to every time step: (Batch, 10, 4)
         ohe_expanded = ohe.unsqueeze(1).expand(-1, self.window_size, -1)
+        sigma_expanded = sigma.unsqueeze(1).expand(-1, self.window_size, -1)
 
-        # Concatenate: (Batch, 10, 5)
-        rnn_input = torch.cat([ohe_expanded, signal], dim=-1)
+        # Concatenate: (Batch, 10, 6)
+        rnn_input = torch.cat([ohe_expanded, sigma_expanded, signal], dim=-1)
 
         # Process sequence
         out, _ = self.rnn(rnn_input)  # out: (Batch, 10, hidden_size)

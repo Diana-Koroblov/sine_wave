@@ -1,7 +1,7 @@
 # Mechanism PRD: Fully Connected (FC) Architecture for Signal De-noising
 
 ## 1. Project Overview (FC Baseline)
-The Fully Connected (FC), or Dense, model serves as the foundational baseline for the Signal De-noising project. Its primary objective is to reconstruct a pure 10-sample sine wave window from a 14-element input vector (4-bit One-Hot context + 10-sample noisy window). While the FC architecture lacks the explicit temporal recurrence of RNNs or LSTMs, it provides a high-capacity non-linear mapping capability that is essential for benchmarking more complex sequential models.
+The Fully Connected (FC), or Dense, model serves as the foundational baseline for the Signal De-noising project. Its primary objective is to reconstruct a pure 10-sample sine wave window from the configured input vector (4-bit One-Hot context + scalar sigma + 10-sample noisy window). While the FC architecture lacks the explicit temporal recurrence of RNNs or LSTMs, it provides a high-capacity non-linear mapping capability that is essential for benchmarking more complex sequential models.
 
 ## 2. Theoretical Foundation (Universal Approximation & Dense Layers)
 ### 2.1 Universal Approximation Theorem
@@ -12,7 +12,7 @@ The model utilizes a "Dense" structure where every neuron in layer $L$ is connec
 
 ## 3. Technical Specifications
 ### 3.1 Dimensions & Layer Stack
-*   **Input Layer:** 14 units (4 units for the One-Hot Target $C$ concatenated with 10 units for the signal window).
+*   **Input Layer:** 15 units (4 units for the One-Hot Target $C$, 1 sigma feature, and 10 units for the signal window).
 *   **Hidden Layers:** Configurable depth and width (defaulting to 2 layers of 64 neurons).
 *   **Output Layer:** 10 units representing the reconstructed 10-sample pure signal window.
 

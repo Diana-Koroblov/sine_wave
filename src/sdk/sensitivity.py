@@ -61,6 +61,7 @@ def run_sensitivity_analysis(
             evaluation = sdk.evaluate_on_test_set(
                 epochs=config.SENSITIVITY_EPOCHS,
                 batch_size=config.SENSITIVITY_BATCH_SIZE,
+                export_artifacts=False,
             )
             for model_type, metrics in evaluation["metrics"].items():
                 metrics_by_model[model_type].append({"noise_level": float(level), **metrics})

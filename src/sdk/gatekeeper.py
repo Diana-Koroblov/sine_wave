@@ -12,9 +12,9 @@ class Gatekeeper:
     @staticmethod
     def validate_input_vector(x: np.ndarray) -> None:
         """
-        Validates the structure of the 14-element input vector.
+        Validates the structure of the homework-aligned input vector.
         Args:
-            x: Input array (Batch, 14).
+            x: Input array (..., INPUT_SIZE).
         """
         if not np.issubdtype(x.dtype, np.number):
             raise ValueError("Gatekeeper Error: Input vector must contain numeric values")
@@ -30,12 +30,18 @@ class Gatekeeper:
         if not np.all(np.isclose(np.sum(ohe_part, axis=-1), 1.0)):
             raise ValueError("Gatekeeper Error: One-Hot vector must have exactly one '1'")
 
+        sigma_part = x[..., config.SIGMA_INDEX]
+        if np.any((sigma_part < config.SIGMA_MIN) | (sigma_part > config.SIGMA_MAX)):
+            raise ValueError(
+                "Gatekeeper Error: Sigma must be a percentage in the range [0.0, 1.0]"
+            )
+
     @staticmethod
     def validate_input_batch(batch: np.ndarray) -> None:
         """
         Validates a batch of input vectors before training.
         Args:
-            batch: Batch array (Batch, 14).
+            batch: Batch array (Batch, INPUT_SIZE).
         """
         if batch.ndim != 2:
             raise ValueError("Gatekeeper Error: Input batch must be a 2D array")

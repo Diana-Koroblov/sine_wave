@@ -5,14 +5,22 @@ import numpy as np
 
 import src.shared.config as config
 from src.data.generator import SineWaveDatasetGenerator
-from src.data.processor import to_one_hot
 from src.sdk.data_prep import split_dataset
-from src.sdk.evaluation import create_model, evaluate_model, format_metrics_table
+from src.sdk.evaluation import create_model
 from src.sdk.gatekeeper import Gatekeeper
+from src.sdk.reporting import evaluate_sdk_on_test_set, generate_sdk_report
+from src.sdk.sample_builder import (
+    build_training_example,
+    compose_input_vector,
+    resolve_noise_level,
+    slice_signal_window,
+)
 from src.sdk.sensitivity import run_sensitivity_analysis as run_sdk_sensitivity_analysis
 from src.training.trainer import ModelTrainer
 
 logger = logging.getLogger(__name__)
+
+
 class SignalDenoiserSDK:
     """
     Public Entry Point for the Signal De-noising System.
@@ -34,28 +42,24 @@ class SignalDenoiserSDK:
     def _build_training_example(
         self, vectors: dict[str, np.ndarray], target_index: int, start_index: int
     ) -> tuple[np.ndarray, np.ndarray]:
-        noisy_window = self._slice_signal_window(vectors["sum_noise"], start_index)
-        pure_window = self._slice_signal_window(vectors[f"pure_{target_index + 1}"], start_index)
-
-        Gatekeeper.validate_window_dimensions(noisy_window)
-        Gatekeeper.validate_window_dimensions(pure_window)
-
-        x_input = self._compose_input_vector(target_index, noisy_window)
-        y_true = pure_window.astype(np.float32)
-
-        if y_true.shape != (config.OUTPUT_SIZE,):
-            raise ValueError(f"Expected Y_true shape {(config.OUTPUT_SIZE,)}, got {y_true.shape}")
-
-        return x_input, y_true
+        return build_training_example(vectors, target_index, start_index)
 
     def _slice_signal_window(self, signal: np.ndarray, start_index: int) -> np.ndarray:
         """Extract a fixed-width window from the requested start index."""
-        return signal[start_index : start_index + config.WINDOW_SIZE]
+        return slice_signal_window(signal, start_index)
 
-    def _compose_input_vector(self, target_index: int, noisy_window: np.ndarray) -> np.ndarray:
-        """Compose the model input as OHE class bits on the left and samples on the right."""
-        class_vector = to_one_hot(target_index, config.NUM_FREQUENCIES)
-        return np.concatenate([class_vector, noisy_window], dtype=np.float32)
+    def _resolve_noise_level(self) -> float:
+        """Return the single sigma value expected by the homework contract."""
+        return resolve_noise_level()
+
+    def _compose_input_vector(
+        self,
+        target_index: int,
+        noise_level: float,
+        noisy_window: np.ndarray,
+    ) -> np.ndarray:
+        """Compose the input as OHE class bits, sigma, then the noisy signal window."""
+        return compose_input_vector(target_index, noise_level, noisy_window)
 
     def prepare_data(
         self, dataset_size: int = config.DATASET_SIZE
@@ -118,33 +122,24 @@ class SignalDenoiserSDK:
         self,
         epochs: int = config.EPOCHS,
         batch_size: int = config.BATCH_SIZE,
+        export_artifacts: bool = True,
     ) -> dict[str, Any]:
         """Train missing models, score the unseen test set, and return a summary table."""
-        if not self.dataset_splits:
-            self.prepare_data()
+        return evaluate_sdk_on_test_set(
+            self,
+            epochs=epochs,
+            batch_size=batch_size,
+            export_artifacts=export_artifacts,
+        )
 
-        test_split = self.dataset_splits["test"]
-        metrics_by_model = {}
-        for model_type in ("FC", "RNN", "LSTM"):
-            if model_type not in self.trained_models:
-                self.run_training(model_type, epochs=epochs, batch_size=batch_size)
-            metrics_by_model[model_type] = evaluate_model(
-                self.trained_models[model_type],
-                test_split["inputs"],
-                test_split["targets"],
-            )
-
-        return {
-            "metrics": metrics_by_model,
-            "summary_table": format_metrics_table(metrics_by_model),
-        }
     def run_sensitivity_analysis(self, noise_levels: list[float] | None = None) -> dict[str, Any]:
         """Sweep noise levels, evaluate all models, and export research figures."""
         return run_sdk_sensitivity_analysis(self, noise_levels=noise_levels)
+
     def generate_report(self) -> str:
         """
-        Analyzes results and generates a performance report.
+        Generate a concise markdown report from the current test-set evaluation.
         Returns:
-            Path to the generated report.
+            Markdown report content.
         """
-        return ""
+        return generate_sdk_report(self)

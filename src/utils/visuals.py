@@ -32,15 +32,15 @@ class Visualizer:
         filename: str = "reconstruction.png",
     ) -> Path:
         """Plot signal reconstruction comparison with explicit metadata."""
-        # Extract OHE from the first 4 elements of the input vector
-        ohe = noisy_input[:4]
+        ohe = noisy_input[: config.NUM_FREQUENCIES]
         freq_class = int(np.argmax(ohe))
-        noisy_signal = noisy_input[4:]
+        sigma_value = float(noisy_input[config.SIGMA_INDEX])
+        noisy_signal = noisy_input[config.SIGNAL_START_INDEX :]
 
         figure, axes = plt.subplots(1, 2, figsize=(12, 4))
 
         # Title formatting: Extract noise from filename or assume default
-        noise_val = "Unknown"
+        noise_val = f"{sigma_value:.2f}"
         if "noise" in filename.lower():
             # e.g., reconstruction_lstm_freq2_noise0_9.png -> 0_9 -> 0.9
             noise_part = filename.split("noise")[-1].replace(".png", "")
@@ -95,5 +95,21 @@ class Visualizer:
         axis.set_title(f"Reconstruction Quality vs Noise ({metric.upper()})")
         axis.set_xlabel("Noise Intensity (alpha = beta)")
         axis.set_ylabel(metric.upper())
+        axis.legend()
+        return self._save(figure, filename)
+
+    def plot_frequency_mse_comparison(
+        self,
+        frequencies: list[int],
+        mse_by_model: dict[str, list[float]],
+        filename: str = "frequency_mse_comparison.png",
+    ) -> Path:
+        """Plot average per-frequency MSE for each model on the test set."""
+        figure, axis = plt.subplots(figsize=(10, 5))
+        for model_name, mse_values in mse_by_model.items():
+            axis.plot(frequencies, mse_values, marker="o", label=model_name)
+        axis.set_title("Per-Frequency Reconstruction Error")
+        axis.set_xlabel("Frequency (Hz)")
+        axis.set_ylabel("Average Test MSE")
         axis.legend()
         return self._save(figure, filename)

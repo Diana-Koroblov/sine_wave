@@ -15,9 +15,9 @@ During training, the "folded" representation of the RNN is "unrolled" through ti
 
 ## 3. Technical Specifications
 ### 3.1 Dimensions & Mapping
-*   **Input Vector ($X_{\text{input}}$):** 14 elements (4 for One-Hot Target $C$ + 10 for the $\Sigma_{\text{noise}}$ window).
+*   **Input Vector ($X_{\text{input}}$):** 15 elements (4 for One-Hot Target $C$ + 1 sigma feature + 10 noisy samples).
 *   **Output Vector ($Y_{\text{pred}}$):** 10 elements (Reconstructed pure sine wave window).
-*   **Sequential Processing:** The 10 samples from $\Sigma_{\text{noise}}$ are processed as a time series, while the One-Hot vector $C$ provides the static context for target wave selection.
+*   **Sequential Processing:** The 10 noisy samples are processed as a time series, while the One-Hot vector $C$ and sigma feature provide static context for target wave selection.
 
 ### 3.2 Layers & Activations
 *   **Recurrent Layer:** Minimum of one hidden layer with a configurable number of neurons (defaulting to 64).
@@ -37,7 +37,7 @@ During training, the "folded" representation of the RNN is "unrolled" through ti
 ### 4.2 Quality Gates
 *   **Code Quality:** Exactly **0 Ruff violations**.
 *   **Test Coverage:** Minimum **85% unit test coverage** for the RNN module logic.
-*   **Verification:** Successful forward pass verification (Shape check: 14-in to 10-out).
+*   **Verification:** Successful forward pass verification against the configured input size and 10-out contract.
 
 ## 5. Scalability & Maintenance
 *   **Building Blocks Design:** The RNN is designed as a modular component within the `SignalDenoiserSDK`. 
